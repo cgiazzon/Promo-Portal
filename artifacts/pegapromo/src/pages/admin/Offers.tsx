@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useListOffers, useCreateOffer, useExtractProductData } from "@workspace/api-client-react";
+import type { OfferInput } from "@workspace/api-client-react";
 import { useState } from "react";
 import { Plus, Wand2, Loader2, Edit, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -57,7 +58,7 @@ export default function AdminOffers() {
     }
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: OfferInput) => {
     try {
       await createOffer({ data });
       queryClient.invalidateQueries({ queryKey: ["/api/offers"] });

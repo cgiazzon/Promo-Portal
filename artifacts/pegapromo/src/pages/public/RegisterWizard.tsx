@@ -26,9 +26,12 @@ export default function RegisterWizard() {
     try {
       // Mock stripe processing time
       await new Promise(r => setTimeout(r, 1500));
-      await registerMutation({ data: getValues() });
-      setStep(4); // Success step
-    } catch (e: any) {
+      const res = await registerMutation({ data: getValues() });
+      if (res.token) {
+        localStorage.setItem("auth_token", res.token);
+      }
+      setStep(4);
+    } catch (e: unknown) {
       toast({
         variant: "destructive",
         title: "Erro no cadastro",

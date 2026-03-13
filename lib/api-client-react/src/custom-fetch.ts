@@ -271,6 +271,15 @@ async function parseSuccessBody(
   }
 }
 
+function getStoredAuthToken(): string | null {
+  if (typeof globalThis.localStorage === "undefined") return null;
+  try {
+    return globalThis.localStorage.getItem("auth_token");
+  } catch {
+    return null;
+  }
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -284,6 +293,11 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+  const token = getStoredAuthToken();
+  if (token && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${token}`);
+  }
 
   if (
     typeof init.body === "string" &&

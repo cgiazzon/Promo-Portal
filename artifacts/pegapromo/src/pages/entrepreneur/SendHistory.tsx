@@ -11,11 +11,10 @@ export default function SendHistory() {
   const [search, setSearch] = useState("");
 
   const statusIcon: Record<string, React.ReactNode> = {
-    delivered: <CheckCircle className="w-4 h-4 text-green-500" />,
+    sent: <CheckCircle className="w-4 h-4 text-green-500" />,
     failed: <XCircle className="w-4 h-4 text-red-500" />,
-    pending: <Clock className="w-4 h-4 text-yellow-500" />,
   };
-  const statusLabel: Record<string, string> = { delivered: "Entregue", failed: "Falhou", pending: "Pendente" };
+  const statusLabel: Record<string, string> = { sent: "Enviado", failed: "Falhou" };
 
   const filtered = history?.filter(h => {
     if (filter !== "all" && h.status !== filter) return false;
@@ -39,9 +38,8 @@ export default function SendHistory() {
           <div className="flex gap-2">
             {[
               { key: "all", label: "Todos" },
-              { key: "delivered", label: "Entregues" },
+              { key: "sent", label: "Enviados" },
               { key: "failed", label: "Falhos" },
-              { key: "pending", label: "Pendentes" },
             ].map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
                 {f.label}
@@ -56,7 +54,7 @@ export default function SendHistory() {
             <p className="text-sm text-muted-foreground">Total de Envios</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{history?.filter(h => h.status === "delivered").length || 0}</p>
+            <p className="text-2xl font-bold text-green-600">{history?.filter(h => h.status === "sent").length || 0}</p>
             <p className="text-sm text-muted-foreground">Entregues</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center">

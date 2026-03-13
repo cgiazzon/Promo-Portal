@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetWallet, useRequestWithdrawal, useUpdatePixKey } from "@workspace/api-client-react";
+import { PixKeyInputPixKeyType } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
 import { Wallet as WalletIcon, ArrowDownRight, ArrowUpRight, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { useState } from "react";
@@ -11,7 +12,7 @@ export default function Wallet() {
   const { mutateAsync: requestWithdraw } = useRequestWithdrawal();
   const { mutateAsync: updatePix } = useUpdatePixKey();
   
-  const [pixKeyType, setPixKeyType] = useState("cpf");
+  const [pixKeyType, setPixKeyType] = useState<PixKeyInputPixKeyType>("cpf");
   const [pixKey, setPixKey] = useState("");
   const [isEditingPix, setIsEditingPix] = useState(false);
   
@@ -21,7 +22,7 @@ export default function Wallet() {
   const handleUpdatePix = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updatePix({ data: { pixKeyType: pixKeyType as any, pixKey } });
+      await updatePix({ data: { pixKeyType, pixKey } });
       toast({ title: "Chave Pix atualizada com sucesso!" });
       setIsEditingPix(false);
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
@@ -113,7 +114,7 @@ export default function Wallet() {
               <p className="font-mono font-medium text-lg truncate">{wallet.pixKey}</p>
               <button 
                 onClick={() => {
-                  setPixKeyType(wallet.pixKeyType || "cpf");
+                  setPixKeyType((wallet.pixKeyType || "cpf") as PixKeyInputPixKeyType);
                   setPixKey(wallet.pixKey || "");
                   setIsEditingPix(true);
                 }}
@@ -126,7 +127,7 @@ export default function Wallet() {
             <form onSubmit={handleUpdatePix} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Tipo de Chave</label>
-                <select value={pixKeyType} onChange={e => setPixKeyType(e.target.value)} className="w-full p-2.5 rounded-lg border bg-background text-sm font-medium">
+                <select value={pixKeyType} onChange={e => setPixKeyType(e.target.value as PixKeyInputPixKeyType)} className="w-full p-2.5 rounded-lg border bg-background text-sm font-medium">
                   <option value="cpf">CPF</option>
                   <option value="cnpj">CNPJ</option>
                   <option value="email">E-mail</option>

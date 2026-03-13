@@ -3,7 +3,32 @@ import { LoginBody, RegisterBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-let currentUser: any = null;
+interface MockUser {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  planId: number;
+  status: string;
+  trialEndsAt: string;
+  createdAt: string;
+}
+
+const sessions = new Map<string, MockUser>();
+
+function getSessionToken(req: { headers: Record<string, string | string[] | undefined> }): string {
+  const authHeader = req.headers["authorization"];
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+  return "default-session";
+}
+
+export function getSessionUser(req: { headers: Record<string, string | string[] | undefined> }): MockUser | null {
+  const token = getSessionToken(req);
+  return sessions.get(token) || null;
+}
 
 router.post("/auth/login", (req, res) => {
   const body = LoginBody.parse(req.body);
@@ -12,7 +37,8 @@ router.post("/auth/login", (req, res) => {
   if (body.email === "admin@pegapromo.com") role = "admin";
   if (body.email === "colaborador@pegapromo.com") role = "collaborator";
 
-  currentUser = {
+  const token = "mock-jwt-token-" + Date.now();
+  const user: MockUser = {
     id: role === "admin" ? 1 : role === "collaborator" ? 3 : 2,
     name: role === "admin" ? "Admin PEGAPROMO" : role === "collaborator" ? "Maria Assistente" : "João Empreendedor",
     email: body.email,
@@ -23,16 +49,15 @@ router.post("/auth/login", (req, res) => {
     trialEndsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString(),
   };
+  sessions.set(token, user);
 
-  res.json({
-    token: "mock-jwt-token-" + Date.now(),
-    user: currentUser,
-  });
+  res.json({ token, user });
 });
 
 router.post("/auth/register", (req, res) => {
   const body = RegisterBody.parse(req.body);
-  currentUser = {
+  const token = "mock-jwt-token-" + Date.now();
+  const user: MockUser = {
     id: 10,
     name: body.name,
     email: body.email,
@@ -43,31 +68,23 @@ router.post("/auth/register", (req, res) => {
     trialEndsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString(),
   };
-  res.status(201).json({
-    token: "mock-jwt-token-" + Date.now(),
-    user: currentUser,
-  });
+  sessions.set(token, user);
+
+  res.status(201).json({ token, user });
 });
 
-router.get("/auth/me", (_req, res) => {
-  if (!currentUser) {
-    currentUser = {
-      id: 2,
-      name: "João Empreendedor",
-      email: "joao@email.com",
-      phone: "(11) 99999-0000",
-      role: "entrepreneur",
-      planId: 2,
-      status: "active",
-      trialEndsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date("2025-01-15").toISOString(),
-    };
+router.get("/auth/me", (req, res): void => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ message: "Nao autenticado" });
+    return;
   }
-  res.json(currentUser);
+  res.json(user);
 });
 
-router.post("/auth/logout", (_req, res) => {
-  currentUser = null;
+router.post("/auth/logout", (req, res) => {
+  const token = getSessionToken(req);
+  sessions.delete(token);
   res.json({ success: true });
 });
 

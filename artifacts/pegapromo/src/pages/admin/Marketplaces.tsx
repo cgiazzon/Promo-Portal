@@ -29,19 +29,15 @@ export default function AdminMarketplaces() {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-foreground">{mp.name}</h3>
-                        <p className="text-sm text-muted-foreground">{mp.affiliateUrl ? "Programa de Afiliados" : "Marketplace"}</p>
+                        <p className="text-sm text-muted-foreground">{mp.affiliateCode ? "Programa de Afiliados" : "Marketplace"}</p>
                       </div>
                     </div>
-                    {mp.isActive ? (
-                      <span className="flex items-center gap-1 text-sm text-green-600 font-medium"><CheckCircle className="w-4 h-4" />Ativo</span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-sm text-red-500 font-medium"><XCircle className="w-4 h-4" />Inativo</span>
-                    )}
+                    <span className="flex items-center gap-1 text-sm text-green-600 font-medium"><CheckCircle className="w-4 h-4" />Ativo</span>
                   </div>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Comissao Padrao</span>
-                      <span className="font-medium text-foreground">{mp.commissionRate ? `${(Number(mp.commissionRate) * 100).toFixed(1)}%` : "Variavel"}</span>
+                      <span className="font-medium text-foreground">{mp.commissionPercent ? `${mp.commissionPercent}%` : "Variavel"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Prazo de Pagamento</span>
@@ -57,11 +53,6 @@ export default function AdminMarketplaces() {
                       <Settings className="w-4 h-4" />
                       Configurar
                     </button>
-                    {mp.affiliateUrl && (
-                      <a href={mp.affiliateUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-xl border border-border text-sm font-semibold flex items-center gap-1.5 hover:bg-muted/30 text-foreground">
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
                   </div>
                 </div>
               );

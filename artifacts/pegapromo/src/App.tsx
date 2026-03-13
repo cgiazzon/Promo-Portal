@@ -9,6 +9,7 @@ import Pricing from "@/pages/public/Pricing";
 import Login from "@/pages/public/Login";
 import RegisterWizard from "@/pages/public/RegisterWizard";
 import FAQ from "@/pages/public/FAQ";
+import Paywall from "@/pages/public/Paywall";
 import EntrepreneurDashboard from "@/pages/entrepreneur/Dashboard";
 import Catalog from "@/pages/entrepreneur/Catalog";
 import Groups from "@/pages/entrepreneur/Groups";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/cadastro" component={RegisterWizard} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/paywall" component={Paywall} />
 
       <Route path="/dashboard" component={EntrepreneurDashboard} />
       <Route path="/dashboard/catalogo" component={Catalog} />

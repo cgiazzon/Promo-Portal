@@ -23,7 +23,7 @@ export default function Groups() {
     defaultValues: { name: "", niche: "", connectionToken: "" }
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: { name: string; niche: string; connectionToken: string }) => {
     try {
       await createGroup({ data });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });

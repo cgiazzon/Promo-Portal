@@ -16,9 +16,9 @@ router.post("/groups", (req, res) => {
   res.status(201).json({ id: 4, ...req.body, connectionStatus: "disconnected", entrepreneurId: 1, createdAt: new Date().toISOString(), sendCount: 0, clickCount: 0 });
 });
 
-router.get("/groups/:id", (req, res) => {
+router.get("/groups/:id", (req, res): void => {
   const group = mockGroups.find(g => g.id === parseInt(req.params.id));
-  if (!group) return res.status(404).json({ message: "Grupo não encontrado" });
+  if (!group) { res.status(404).json({ message: "Grupo não encontrado" }); return; }
   res.json(group);
 });
 
