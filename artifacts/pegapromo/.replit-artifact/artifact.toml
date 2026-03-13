@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "PEGAPROMO"
+version = "1.0.0"
+id = "artifacts/pegapromo"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 24846
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/pegapromo run dev"
+
+[services.env]
+PORT = "24846"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/pegapromo", "run", "build"]
+publicDir = "artifacts/pegapromo/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

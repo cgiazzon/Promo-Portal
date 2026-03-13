@@ -1,0 +1,24 @@
+packages:
+  "framer-motion": "Animations and page transitions for a premium feel"
+  "recharts": "Charts for the entrepreneur and admin dashboards"
+  "date-fns": "Date formatting and manipulation"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod integration for react-hook-form"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility for merging Tailwind classes"
+
+images:
+  - path: "artifacts/pegapromo/public/images/hero-bg.png"
+    description: "Abstract wavy 3D background with vibrant WhatsApp green (#25D366) and soft yellow lighting, smooth, premium SaaS tech aesthetic"
+    aspect_ratio: "16:9"
+  - path: "artifacts/pegapromo/public/images/logo-mark.png"
+    description: "Minimal geometric logo mark for a deals app, vibrant green and yellow gradient on transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/pegapromo/public/images/dashboard-mock.png"
+    description: "Isometric 3D mockup of a modern SaaS dashboard interface showing charts and green buttons"
+    aspect_ratio: "16:9"
+
+notes:
+  - Implements PEGAPROMO frontend using the Orval-generated hooks from @workspace/api-client-react.
+  - All text is localized to pt-BR.
+  - Uses Tailwind CSS v4 syntax.
