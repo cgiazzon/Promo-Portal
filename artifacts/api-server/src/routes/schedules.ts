@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { CreateScheduleBody, UpdateScheduleBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -14,12 +15,14 @@ router.get("/schedules", (_req, res) => {
 });
 
 router.post("/schedules", (req, res) => {
-  res.status(201).json({ id: 5, ...req.body, offerTitle: "Nova Oferta Agendada", groupNames: ["Grupo 1"], status: "pending", shortUrl: "https://pgp.link/" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString() });
+  const body = CreateScheduleBody.parse(req.body);
+  res.status(201).json({ id: 5, ...body, offerTitle: "Nova Oferta Agendada", groupNames: ["Grupo 1"], status: "pending", shortUrl: "https://pgp.link/" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString() });
 });
 
 router.put("/schedules/:id", (req, res) => {
+  const body = UpdateScheduleBody.parse(req.body);
   const sched = mockSchedules.find(s => s.id === parseInt(req.params.id));
-  res.json({ ...sched, ...req.body });
+  res.json({ ...sched, ...body });
 });
 
 router.delete("/schedules/:id", (_req, res) => {

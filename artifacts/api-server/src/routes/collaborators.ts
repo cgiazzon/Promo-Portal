@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { InviteCollaboratorBody, UpdateCollaboratorBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -12,12 +13,14 @@ router.get("/collaborators", (_req, res) => {
 });
 
 router.post("/collaborators", (req, res) => {
-  res.status(201).json({ id: 3, name: null, email: req.body.email, permissions: req.body.permissions, status: "pending", createdAt: new Date().toISOString() });
+  const body = InviteCollaboratorBody.parse(req.body);
+  res.status(201).json({ id: 3, name: null, email: body.email, permissions: body.permissions, status: "pending", createdAt: new Date().toISOString() });
 });
 
 router.put("/collaborators/:id", (req, res) => {
+  const body = UpdateCollaboratorBody.parse(req.body);
   const collab = mockCollaborators.find(c => c.id === parseInt(req.params.id));
-  res.json({ ...collab, permissions: req.body.permissions });
+  res.json({ ...collab, permissions: body.permissions });
 });
 
 router.delete("/collaborators/:id", (_req, res) => {

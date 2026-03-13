@@ -13,12 +13,17 @@ import plansRouter from "./plans";
 import featuredRouter from "./featured";
 import adminRouter from "./admin";
 import entrepreneurRouter from "./entrepreneur";
+import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(plansRouter);
+router.use(featuredRouter);
 router.use(marketplacesRouter);
+
+router.use(requireAuth);
 router.use(offersRouter);
 router.use(groupsRouter);
 router.use(schedulesRouter);
@@ -26,9 +31,9 @@ router.use(sendHistoryRouter);
 router.use(walletRouter);
 router.use(commissionsRouter);
 router.use(collaboratorsRouter);
-router.use(plansRouter);
-router.use(featuredRouter);
-router.use(adminRouter);
 router.use(entrepreneurRouter);
+
+router.use(requireRole("admin"));
+router.use(adminRouter);
 
 export default router;

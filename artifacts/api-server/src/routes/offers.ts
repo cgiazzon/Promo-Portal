@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { CreateOfferBody, UpdateOfferBody, ExtractProductDataBody, ListOffersQueryParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -14,21 +15,23 @@ const mockOffers = [
 ];
 
 router.get("/offers", (req, res) => {
+  const query = ListOffersQueryParams.parse(req.query);
   let result = [...mockOffers];
-  if (req.query.marketplace) {
-    result = result.filter(o => o.marketplaceName.toLowerCase().includes((req.query.marketplace as string).toLowerCase()));
+  if (query.marketplace) {
+    result = result.filter(o => o.marketplaceName.toLowerCase().includes(query.marketplace!.toLowerCase()));
   }
-  if (req.query.category) {
-    result = result.filter(o => o.category === req.query.category);
+  if (query.category) {
+    result = result.filter(o => o.category === query.category);
   }
-  if (req.query.status) {
-    result = result.filter(o => o.status === req.query.status);
+  if (query.status) {
+    result = result.filter(o => o.status === query.status);
   }
   res.json(result);
 });
 
 router.post("/offers", (req, res) => {
-  res.status(201).json({ id: 9, ...req.body, sendCount: 0, clickCount: 0, createdAt: new Date().toISOString() });
+  const body = CreateOfferBody.parse(req.body);
+  res.status(201).json({ id: 9, ...body, sendCount: 0, clickCount: 0, createdAt: new Date().toISOString() });
 });
 
 router.get("/offers/:id", (req, res): void => {
@@ -38,8 +41,9 @@ router.get("/offers/:id", (req, res): void => {
 });
 
 router.put("/offers/:id", (req, res) => {
+  const body = UpdateOfferBody.parse(req.body);
   const offer = mockOffers.find(o => o.id === parseInt(req.params.id));
-  res.json({ ...offer, ...req.body });
+  res.json({ ...offer, ...body });
 });
 
 router.delete("/offers/:id", (_req, res) => {
@@ -47,7 +51,8 @@ router.delete("/offers/:id", (_req, res) => {
 });
 
 router.post("/offers/extract", (req, res) => {
-  const url = req.body.url || "";
+  const body = ExtractProductDataBody.parse(req.body);
+  const url = body.url || "";
   let marketplace = "shopee";
   if (url.includes("temu")) marketplace = "temu";
   if (url.includes("amazon")) marketplace = "amazon";

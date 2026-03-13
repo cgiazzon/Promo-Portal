@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { CreateMarketplaceBody, UpdateMarketplaceBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -14,13 +15,15 @@ router.get("/marketplaces", (_req, res) => {
 });
 
 router.post("/marketplaces", (req, res) => {
-  res.status(201).json({ id: 5, ...req.body });
+  const body = CreateMarketplaceBody.parse(req.body);
+  res.status(201).json({ id: 5, ...body });
 });
 
 router.put("/marketplaces/:id", (req, res) => {
+  const body = UpdateMarketplaceBody.parse(req.body);
   const id = parseInt(req.params.id);
   const mp = marketplaces.find(m => m.id === id);
-  res.json({ ...mp, ...req.body });
+  res.json({ ...mp, ...body });
 });
 
 export default router;

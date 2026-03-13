@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { CreateGroupBody, UpdateGroupBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -13,7 +14,8 @@ router.get("/groups", (_req, res) => {
 });
 
 router.post("/groups", (req, res) => {
-  res.status(201).json({ id: 4, ...req.body, connectionStatus: "disconnected", entrepreneurId: 1, createdAt: new Date().toISOString(), sendCount: 0, clickCount: 0 });
+  const body = CreateGroupBody.parse(req.body);
+  res.status(201).json({ id: 4, ...body, connectionStatus: "disconnected", entrepreneurId: 1, createdAt: new Date().toISOString(), sendCount: 0, clickCount: 0 });
 });
 
 router.get("/groups/:id", (req, res): void => {
@@ -23,8 +25,9 @@ router.get("/groups/:id", (req, res): void => {
 });
 
 router.put("/groups/:id", (req, res) => {
+  const body = UpdateGroupBody.parse(req.body);
   const group = mockGroups.find(g => g.id === parseInt(req.params.id));
-  res.json({ ...group, ...req.body });
+  res.json({ ...group, ...body });
 });
 
 router.delete("/groups/:id", (_req, res) => {
