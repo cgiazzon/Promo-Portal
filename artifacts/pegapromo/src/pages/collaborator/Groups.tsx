@@ -41,7 +41,7 @@ export default function CollaboratorGroups() {
                       <p className="text-sm text-muted-foreground">{g.niche}</p>
                     </div>
                   </div>
-                  {g.isConnected ? <Wifi className="w-5 h-5 text-green-500" /> : <WifiOff className="w-5 h-5 text-red-400" />}
+                  {g.connectionStatus === "connected" ? <Wifi className="w-5 h-5 text-green-500" /> : <WifiOff className="w-5 h-5 text-red-400" />}
                 </div>
                 <div className="flex gap-2">
                   <button className="flex-1 bg-primary text-primary-foreground py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 hover:opacity-90">

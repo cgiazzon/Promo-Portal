@@ -31,9 +31,9 @@ router.post("/offers", (req, res) => {
   res.status(201).json({ id: 9, ...req.body, sendCount: 0, clickCount: 0, createdAt: new Date().toISOString() });
 });
 
-router.get("/offers/:id", (req, res) => {
+router.get("/offers/:id", (req, res): void => {
   const offer = mockOffers.find(o => o.id === parseInt(req.params.id));
-  if (!offer) return res.status(404).json({ message: "Oferta não encontrada" });
+  if (!offer) { res.status(404).json({ message: "Oferta não encontrada" }); return; }
   res.json(offer);
 });
 

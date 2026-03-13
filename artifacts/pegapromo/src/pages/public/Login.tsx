@@ -14,12 +14,11 @@ export default function Login() {
     defaultValues: { email: "", password: "" }
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: { email: string; password: string }) => {
     setLoading(true);
     try {
       await login(data);
-      // login function handles redirect based on role
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         variant: "destructive",
         title: "Erro ao entrar",

@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useListOffers, useCreateSchedule, useListGroups } from "@workspace/api-client-react";
 import { useState } from "react";
 import { OfferCard } from "@/components/OfferCard";
-import { Search, Filter, X, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Search, Filter, X, Calendar as CalendarIcon, Clock, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 

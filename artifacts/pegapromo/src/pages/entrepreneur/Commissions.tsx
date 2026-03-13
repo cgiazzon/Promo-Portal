@@ -9,14 +9,13 @@ export default function Commissions() {
 
   const statusLabel: Record<string, { text: string; color: string }> = {
     pending: { text: "Pendente", color: "bg-yellow-100 text-yellow-700" },
-    approved: { text: "Aprovada", color: "bg-green-100 text-green-700" },
+    available: { text: "Disponivel", color: "bg-green-100 text-green-700" },
     paid: { text: "Paga", color: "bg-blue-100 text-blue-700" },
-    cancelled: { text: "Cancelada", color: "bg-red-100 text-red-700" },
   };
 
-  const total = commissions?.reduce((sum, c) => sum + (Number(c.amount) || 0), 0) || 0;
-  const approved = commissions?.filter(c => c.status === "approved").reduce((sum, c) => sum + (Number(c.amount) || 0), 0) || 0;
-  const pending = commissions?.filter(c => c.status === "pending").reduce((sum, c) => sum + (Number(c.amount) || 0), 0) || 0;
+  const total = commissions?.reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0) || 0;
+  const available = commissions?.filter(c => c.status === "available").reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0) || 0;
+  const pending = commissions?.filter(c => c.status === "pending").reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0) || 0;
 
   return (
     <DashboardLayout>
@@ -37,9 +36,9 @@ export default function Commissions() {
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><TrendingUp className="w-5 h-5 text-blue-600" /></div>
-              <p className="text-sm text-muted-foreground">Aprovadas</p>
+              <p className="text-sm text-muted-foreground">Disponiveis</p>
             </div>
-            <p className="text-3xl font-bold text-foreground">R$ {approved.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-foreground">R$ {available.toFixed(2)}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
@@ -77,15 +76,15 @@ export default function Commissions() {
               <tbody className="divide-y divide-border">
                 {commissions.map(c => (
                   <tr key={c.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3 text-sm font-medium text-foreground">{c.marketplace}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{c.marketplaceName}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{c.offerTitle}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-foreground">R$ {Number(c.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-foreground">R$ {Number(c.commissionAmount).toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusLabel[c.status]?.color || "bg-gray-100 text-gray-500"}`}>
                         {statusLabel[c.status]?.text || c.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{c.createdAt ? format(new Date(c.createdAt), "dd/MM/yyyy", { locale: ptBR }) : "-"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{c.saleDate ? format(new Date(c.saleDate), "dd/MM/yyyy", { locale: ptBR }) : "-"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -55,7 +55,7 @@ artifacts-monorepo/
 - `components/layout/PublicLayout.tsx` — header/footer for public pages
 - `components/layout/DashboardLayout.tsx` — sidebar/mobile nav for authenticated pages; auto-detects role from URL path
 - `components/ui/` — shadcn/ui components
-- `hooks/use-auth.ts` — auth hook with mock login, role detection, route protection
+- `hooks/use-auth.ts` — auth hook with token-based login, role detection, route protection (stores JWT in localStorage)
 - `hooks/use-toast.ts` — toast notifications
 - `lib/utils.ts` — includes `getMarketplaceColor()` for marketplace-specific colors
 
@@ -68,7 +68,7 @@ artifacts-monorepo/
 All routes under `/api` prefix. Mock data for demo purposes.
 
 ### Routes
-- `auth.ts` — login, register, getMe (mock users by role based on email)
+- `auth.ts` — login, register, getMe, logout (token-based sessions via Bearer header; mock users by role based on email)
 - `offers.ts` — CRUD offers with 8 mock products across 4 marketplaces
 - `groups.ts` — WhatsApp groups (name, niche, token only — no contacts stored)
 - `schedules.ts` — scheduled sends
