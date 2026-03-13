@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export function DashboardLayout({ children, role: roleProp }: { children: React.ReactNode, role?: "admin" | "entrepreneur" | "collaborator" }) {
   const [location] = useLocation();
   const role = roleProp || (location.startsWith("/admin") ? "admin" : location.startsWith("/collaborator") ? "collaborator" : "entrepreneur");
-  const { user, logout } = useAuth(true);
+  const { user, logout } = useAuth(true, role);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const getLinks = () => {

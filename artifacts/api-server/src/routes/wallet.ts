@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { UpdatePixKeyBody, RequestWithdrawalBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -28,13 +29,15 @@ router.get("/wallet", (_req, res) => {
 });
 
 router.put("/wallet/pix-key", (req, res) => {
-  res.json({ ...mockWallet, pixKeyType: req.body.pixKeyType, pixKey: req.body.pixKey });
+  const body = UpdatePixKeyBody.parse(req.body);
+  res.json({ ...mockWallet, pixKeyType: body.pixKeyType, pixKey: body.pixKey });
 });
 
 router.post("/wallet/withdraw", (req, res) => {
+  const body = RequestWithdrawalBody.parse(req.body);
   res.status(201).json({
     id: 10,
-    amount: req.body.amount,
+    amount: body.amount,
     pixKey: mockWallet.pixKey,
     pixKeyType: mockWallet.pixKeyType,
     status: "pending",

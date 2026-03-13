@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useListOffers, useCreateSchedule, useListGroups } from "@workspace/api-client-react";
+import type { Offer } from "@workspace/api-client-react";
 import { useState } from "react";
 import { OfferCard } from "@/components/OfferCard";
 import { Search, Filter, X, Calendar as CalendarIcon, Clock, Check } from "lucide-react";
@@ -15,7 +16,7 @@ export default function Catalog() {
   const { mutateAsync: schedule } = useCreateSchedule();
   const { toast } = useToast();
 
-  const [schedulingOffer, setSchedulingOffer] = useState<any>(null);
+  const [schedulingOffer, setSchedulingOffer] = useState<Offer | null>(null);
   const [scheduleData, setScheduleData] = useState({ groupIds: [] as number[], date: "", time: "" });
 
   const filteredOffers = offers?.filter(o => 
@@ -34,7 +35,7 @@ export default function Catalog() {
     try {
       await schedule({
         data: {
-          offerId: schedulingOffer.id,
+          offerId: schedulingOffer!.id,
           groupIds: scheduleData.groupIds,
           scheduledAt
         }
