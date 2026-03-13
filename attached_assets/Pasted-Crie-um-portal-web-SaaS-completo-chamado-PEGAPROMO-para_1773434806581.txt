@@ -1,0 +1,452 @@
+Crie um portal web SaaS completo chamado PEGAPROMO para empreendedores individuais 
+que gerenciam grupos de ofertas no WhatsApp. O sistema deve ser desenvolvido em português 
+brasileiro, com design mobile-first, estilo vibrante e comercial, cor primária verde 
+(paleta inspirada no WhatsApp), com energia de promoção e conversão.
+
+O cliente final NÃO acessa nenhuma página do portal. Toda a interação com o cliente 
+acontece exclusivamente via grupos do WhatsApp, onde o sistema envia automaticamente 
+imagens de ofertas com links de afiliado encurtados direcionando ao marketplace original.
+
+IMPORTANTE: O PEGAPROMO NÃO armazena contatos, membros ou qualquer dado pessoal dos 
+participantes dos grupos de WhatsApp. A integração com o WhatsApp é exclusivamente 
+para envio automático de mensagens de ofertas nos grupos. A gestão de membros, 
+participantes e contatos é de responsabilidade exclusiva do empreendedor, dentro 
+do próprio WhatsApp.
+
+---
+
+## MARKETPLACES PARCEIROS
+
+O portal opera como afiliado de 4 marketplaces:
+•⁠  ⁠Shopee
+•⁠  ⁠Temu
+•⁠  ⁠Amazon
+•⁠  ⁠Mercado Livre
+
+Cada marketplace possui:
+•⁠  ⁠Código de afiliado único cadastrado pelo Admin nas configurações da plataforma
+•⁠  ⁠Percentual de comissão fixo definido pelo PEGAPROMO para aquele marketplace
+•⁠  ⁠Cor de identidade visual para geração de imagens:
+  - Shopee: laranja (#EE4D2D)
+  - Temu: laranja-avermelhado (#FF6B35)
+  - Amazon: laranja-amarelo (#FF9900) com fundo escuro
+  - Mercado Livre: amarelo (#FFE600) com azul (#3483FA)
+
+---
+
+## FLUXO CENTRAL DA PLATAFORMA
+
+1.⁠ ⁠Admin cadastra oferta: cola o link do produto no marketplace → sistema extrai 
+   dados automaticamente (título, foto, preço) → admin complementa com percentual 
+   de desconto, cupom (se houver), categoria e validade.
+
+2.⁠ ⁠Sistema monta o link de afiliado automaticamente: link original do produto + 
+   código de afiliado do marketplace correspondente + encurtamento único por 
+   oferta+grupo (para rastrear qual grupo gerou o clique). O encurtamento é 
+   automático e transparente, sem ação necessária do admin ou empreendedor.
+
+3.⁠ ⁠Sistema gera imagem automática da oferta (1:1, estilo feed) contendo:
+   - Foto do produto (centralizada)
+   - Logo do marketplace de origem
+   - Nome/título do produto
+   - Preço original riscado + preço final em destaque
+   - Badge circular de percentual de desconto (ex: -40%) em vermelho
+   - Cupom promocional (se houver), em destaque
+   - Fundo com cor de identidade do marketplace
+   O template visual pode ser customizado pelo Admin por marketplace.
+
+4.⁠ ⁠Empreendedor acessa o catálogo, filtra ofertas, seleciona e agenda o envio 
+   para um ou mais grupos.
+
+5.⁠ ⁠No horário agendado, o sistema envia automaticamente via Z-API ou Evolution API 
+   a mensagem para o grupo do WhatsApp Business cadastrado pelo empreendedor: 
+   imagem da oferta + link encurtado rastreável logo abaixo. O PEGAPROMO apenas 
+   dispara a mensagem no grupo — não lê, não armazena e não processa nenhuma 
+   resposta, contato ou dado de participante do grupo.
+
+6.⁠ ⁠Cliente no grupo clica no link → é redirecionado diretamente ao marketplace 
+   com o código de afiliado parametrizado na URL.
+
+7.⁠ ⁠O PEGAPROMO recebe os dados de venda via API dos marketplaces parceiros → 
+   calcula a comissão do empreendedor com base no percentual fixo definido pelo 
+   admin para aquele marketplace → credita o valor na carteira digital do 
+   empreendedor 35 dias após a data da venda → empreendedor solicita saque 
+   via Pix a qualquer momento após a liberação.
+
+---
+
+## WHATSAPP BUSINESS — INSTRUÇÃO AO EMPREENDEDOR
+
+O PEGAPROMO requer que o empreendedor utilize o WhatsApp Business (não o WhatsApp 
+comum) para integração com a plataforma. Em todas as telas relevantes exibir 
+orientação clara:
+
+•⁠  ⁠Na tela de criação de grupo: exibir banner informativo "Para conectar seu WhatsApp 
+  ao PEGAPROMO você precisa ter o WhatsApp Business instalado. Se ainda usa o 
+  WhatsApp comum, faça a migração antes de prosseguir." com link para o guia 
+  oficial do WhatsApp Business.
+•⁠  ⁠Na tela de configurações de conexão: exibir checklist de pré-requisitos:
+  ✓ Tenho o WhatsApp Business instalado no meu celular
+  ✓ Migrei meu número do WhatsApp comum para o WhatsApp Business
+  ✓ Tenho o token de conexão Z-API/Evolution API em mãos
+•⁠  ⁠Na página de onboarding pós-cadastro (etapa 4 do wizard): incluir card 
+  de instrução "Antes de conectar seu primeiro grupo, certifique-se de estar 
+  usando o WhatsApp Business" com botão de download para Android e iOS.
+
+---
+
+## PERFIS DE USUÁRIO
+
+3 perfis com painéis separados:
+
+1.⁠ ⁠*Administrador* — gerencia catálogo de ofertas, marketplaces, códigos de 
+   afiliado e percentuais de comissão, aprova cadastros de empreendedores, gerencia 
+   planos e assinaturas, define a oferta destaque da semana, visualiza métricas 
+   gerais, gerencia carteiras e saques dos empreendedores.
+
+2.⁠ ⁠*Empreendedor* — seleciona ofertas do catálogo, agenda envios automáticos para 
+   seus grupos de WhatsApp Business, gerencia seus grupos cadastrados no portal 
+   (apenas nome, nicho e token de conexão — sem armazenamento de contatos ou membros), 
+   possui carteira digital com saldo de comissões e pode solicitar saques via Pix.
+
+3.⁠ ⁠*Colaborador/Assistente* — acesso parcial ao painel do empreendedor para ajudar 
+   na gestão de grupos e agendamentos, conforme permissões definidas pelo empreendedor.
+
+---
+
+## PÁGINAS PÚBLICAS (sem login)
+
+•⁠  ⁠*Landing page*: hero com CTA de trial gratuito de 10 dias, seção "como funciona" 
+  em 3 passos, benefícios, seção de planos resumida com preços, depoimentos e rodapé.
+•⁠  ⁠*Página de planos e preços*: tabela comparativa dos 3 planos com preços e 
+  destaque no Pro, botão de início de trial gratuito de 10 dias em cada plano.
+•⁠  ⁠*Página de login e cadastro*: cadastro livre para empreendedores com coleta 
+  de cartão de crédito via Stripe no momento do cadastro (sem cobrança durante 
+  os 10 dias de trial). Exibir claramente que a cobrança inicia após o trial.
+•⁠  ⁠*FAQ e suporte*: perguntas frequentes em accordion, formulário de contato.
+
+---
+
+## CADASTRO E PAGAMENTO DO EMPREENDEDOR
+
+O fluxo de cadastro do empreendedor deve ser um wizard em etapas:
+
+Etapa 1 — Dados pessoais: nome completo, e-mail, senha, telefone.
+Etapa 2 — Escolha do plano: cards dos 3 planos com preços e funcionalidades. 
+  O usuário seleciona o plano desejado.
+Etapa 3 — Pagamento: formulário de cartão de crédito integrado ao Stripe 
+  (Stripe Elements ou Stripe.js). Exibir resumo: plano escolhido, valor mensal, 
+  data de início da cobrança (após 10 dias de trial). Botão "Iniciar meu trial gratuito".
+Etapa 4 — Confirmação: mensagem de boas-vindas, resumo do plano, card de instrução 
+  para instalar/migrar para WhatsApp Business com links de download, e botão 
+  para acessar o painel.
+
+Regras de pagamento:
+•⁠  ⁠Trial gratuito de 10 dias — cartão cadastrado mas não cobrado
+•⁠  ⁠Após 10 dias: cobrança automática recorrente mensal via Stripe
+•⁠  ⁠Em caso de falha no pagamento: notificar o empreendedor por e-mail e exibir 
+  banner de alerta no painel com CTA para atualizar o cartão
+•⁠  ⁠Após expiração do trial sem conversão para plano pago: bloquear acesso aos 
+  relatórios e redirecionar para página de conclusão de compra do plano
+•⁠  ⁠Cancelamento disponível nas configurações do painel
+
+---
+
+## PÁGINA DE CONCLUSÃO DE COMPRA (pós-trial)
+
+Exibida quando o trial expira sem pagamento confirmado. Deve conter:
+•⁠  ⁠Mensagem amigável: "Seu período gratuito encerrou — continue aproveitando o PEGAPROMO"
+•⁠  ⁠Resumo do que o empreendedor conquistou durante o trial (grupos criados, 
+  ofertas enviadas, cliques gerados) para reforçar o valor percebido
+•⁠  ⁠Cards dos 3 planos com preços e botão de assinar em cada um
+•⁠  ⁠Destaque no plano Pro como recomendado
+•⁠  ⁠Campo para inserir cartão (Stripe Elements) caso o cadastrado precise ser atualizado
+•⁠  ⁠Botão "Ativar meu plano agora"
+•⁠  ⁠Link para falar com suporte
+
+---
+
+## PLANOS E ASSINATURAS
+
+3 planos com trial gratuito de 10 dias. Sem bloqueio abrupto ao atingir limite 
+— exibir aviso com CTA de upgrade:
+
+| Funcionalidade              | Starter R$9,90/mês | Pro R$29,90/mês | Business R$99,90/mês |
+|-----------------------------|-------------------|-----------------|----------------------|
+| Grupos gerenciados          | 1                 | 3               | Ilimitado            |
+| Ofertas agendadas/mês       | 30                | 150             | Ilimitado            |
+| Colaboradores               | 0                 | 2               | 10                   |
+| Métricas avançadas          | Não               | Sim             | Sim                  |
+
+---
+
+## PAINEL DO ADMINISTRADOR
+
+### Dashboard
+•⁠  ⁠Métricas gerais: empreendedores ativos, grupos cadastrados, ofertas enviadas, 
+  cliques totais, receita MRR
+•⁠  ⁠Resumo de assinaturas por plano (Starter / Pro / Business)
+•⁠  ⁠Total de comissões a liberar nos próximos 35 dias
+•⁠  ⁠Total de saques pendentes de processamento
+
+### Oferta Destaque da Semana
+•⁠  ⁠Seção dedicada para o admin escolher UMA oferta do catálogo como destaque da semana
+•⁠  ⁠A oferta escolhida aparece em destaque no dashboard de todos os empreendedores
+•⁠  ⁠Campo para mensagem motivacional opcional junto à oferta destaque
+•⁠  ⁠Histórico das ofertas destaque anteriores
+
+### Gerenciamento de Marketplaces
+•⁠  ⁠Listagem dos 4 marketplaces (Shopee, Temu, Amazon, Mercado Livre)
+•⁠  ⁠Por marketplace: cadastrar/editar código de afiliado, percentual de comissão 
+  fixo repassado ao empreendedor, cor de identidade, logo e template de imagem
+
+### Catálogo de Ofertas
+•⁠  ⁠Formulário de cadastro de oferta:
+  - Campo para colar o link do produto (marketplace detectado automaticamente)
+  - Extração automática de: título, foto do produto, preço original
+  - Campos editáveis: percentual de desconto, preço final, cupom promocional, 
+    categoria/nicho, data de validade, status (ativa/inativa)
+•⁠  ⁠Listagem de ofertas com filtros por marketplace, categoria, desconto e validade
+•⁠  ⁠Preview da imagem gerada automaticamente para cada oferta
+•⁠  ⁠Botão para regenerar imagem após edições
+
+### Gestão de Comissões e Carteiras
+•⁠  ⁠Painel de vendas recebidas via API dos marketplaces: data da venda, marketplace, 
+  oferta, grupo de origem, valor da venda, percentual de comissão, valor a repassar, 
+  data de liberação (venda + 35 dias), status (aguardando / disponível / sacado)
+•⁠  ⁠Listagem de saques solicitados pelos empreendedores: empreendedor, valor, 
+  chave Pix, data da solicitação, status (pendente / processado)
+•⁠  ⁠Ação de marcar saque como processado após envio do Pix
+
+### Gestão de Empreendedores
+•⁠  ⁠Lista com status: trial, ativo, inadimplente, cancelado
+•⁠  ⁠Ver plano, data de expiração do trial, grupos cadastrados, ofertas agendadas 
+  e saldo da carteira digital de cada empreendedor
+
+### Planos e Assinaturas
+•⁠  ⁠Assinantes por plano, MRR, histórico de pagamentos via Stripe
+•⁠  ⁠Alertas de inadimplência
+
+### Relatórios
+•⁠  ⁠Cliques por marketplace, por oferta, por grupo, por empreendedor
+•⁠  ⁠Vendas e comissões por período
+•⁠  ⁠Conversões estimadas e receita de afiliado projetada
+
+---
+
+## PAINEL DO EMPREENDEDOR
+
+### Dashboard
+•⁠  ⁠Banner de destaque: OFERTA DA SEMANA escolhida pelo admin, com imagem da oferta, 
+  badge de desconto, nome do produto e botão "Enviar para meus grupos agora" — 
+  elemento visual proeminente e motivador no topo do dashboard
+•⁠  ⁠Cards de resumo operacional: grupos cadastrados, ofertas agendadas hoje, 
+  cliques da semana
+•⁠  ⁠Resumo financeiro rápido: saldo disponível na carteira, comissões a liberar 
+  (aguardando 35 dias), total sacado no mês — com botão "Ver detalhes financeiros"
+•⁠  ⁠Feed de notificações: novas ofertas no catálogo, comissão liberada na carteira, 
+  relatório semanal de desempenho
+•⁠  ⁠Indicador de dias restantes do trial (quando aplicável) com CTA de ativação do plano
+
+### Catálogo de Ofertas
+•⁠  ⁠Vitrine das ofertas ativas cadastradas pelo admin
+•⁠  ⁠Filtros por: categoria/nicho, marketplace, faixa de desconto, 
+  popularidade/mais enviadas, validade
+•⁠  ⁠Card de cada oferta: imagem gerada, logo do marketplace, título, preço original, 
+  preço final, badge de desconto, cupom, validade
+•⁠  ⁠Botão "Agendar envio" em cada card
+
+### Meus Grupos
+•⁠  ⁠Listagem dos grupos cadastrados no PEGAPROMO com: nome do grupo, nicho/categoria, 
+  status da conexão WhatsApp Business (conectado/desconectado)
+•⁠  ⁠O PEGAPROMO armazena apenas: nome do grupo, nicho e token de conexão via 
+  Z-API/Evolution API. Nenhum dado de participantes ou contatos é armazenado.
+•⁠  ⁠Criar novo grupo: nome, nicho/categoria, colar token de conexão Z-API/Evolution API
+•⁠  ⁠Banner de instrução ao criar grupo: "Você precisa do WhatsApp Business para 
+  conectar seu grupo. Ainda usa o WhatsApp comum? Veja como migrar." com link 
+  para guia oficial
+•⁠  ⁠Tela de detalhe do grupo: histórico de envios realizados, horários preferidos 
+  para envio automático
+•⁠  ⁠Indicador visual de limite de grupos conforme plano (ex: "2 de 3 grupos usados")
+
+### Agendamentos
+•⁠  ⁠Calendário e lista de envios agendados
+•⁠  ⁠Ao agendar uma oferta: selecionar grupo(s) de destino, data e hora
+•⁠  ⁠Preview do que será enviado no WhatsApp: imagem da oferta + link encurtado 
+  rastreável gerado automaticamente para aquele grupo
+•⁠  ⁠Editar ou cancelar agendamentos
+
+### Histórico de Envios
+•⁠  ⁠Log de envios: oferta enviada, grupo de destino, data/hora, status 
+  (enviado/falhou), cliques gerados pelo link daquele grupo
+•⁠  ⁠Nenhum dado de participantes ou respostas do grupo é exibido ou armazenado
+
+### Financeiro
+
+#### Resumo Financeiro
+•⁠  ⁠Seletor de período: últimos 7 dias / 30 dias / 90 dias / período personalizado
+•⁠  ⁠Cards de totais: total de vendas no período, total de comissões geradas, 
+  total liberado (disponível para saque), total sacado
+•⁠  ⁠Gráfico de vendas por período
+•⁠  ⁠Desdobramento em abas:
+  - Vendas por grupo: tabela com grupo, quantidade de vendas, valor total, 
+    comissão gerada
+  - Vendas por oferta: tabela com oferta, marketplace, quantidade de vendas, 
+    valor total, comissão gerada
+  - Vendas por cliente final: tabela com identificador do link clicado, 
+    quantidade de compras, valor total (sem dados pessoais do cliente)
+
+#### Carteira Digital
+•⁠  ⁠Saldo disponível para saque (comissões liberadas após 35 dias)
+•⁠  ⁠Saldo a liberar: lista de comissões pendentes com data prevista de liberação
+•⁠  ⁠Histórico completo de créditos e débitos da carteira
+•⁠  ⁠Chave Pix cadastrada com opção de editar
+•⁠  ⁠Botão de saque: ao clicar, exibe confirmação com valor disponível, chave Pix 
+  de destino e botão "Confirmar saque" — saque enviado para fila de processamento 
+  pelo admin via Pix
+•⁠  ⁠Histórico de saques: data da solicitação, valor, chave Pix, status 
+  (pendente / processado)
+
+#### Configuração da Chave Pix
+•⁠  ⁠Campo para cadastrar chave Pix: CPF/CNPJ, e-mail, telefone ou chave aleatória
+•⁠  ⁠Validação do formato da chave
+•⁠  ⁠Aviso: "Os saques são processados manualmente em até X dias úteis"
+
+### Métricas (somente Pro e Business)
+•⁠  ⁠Cliques por oferta, por grupo, por marketplace
+•⁠  ⁠Gráficos por período (semana/mês)
+•⁠  ⁠Ranking das ofertas mais clicadas
+
+### Colaboradores
+•⁠  ⁠Convidar por e-mail, definir permissões, remover
+•⁠  ⁠Indisponível no plano Starter
+
+### Configurações
+•⁠  ⁠Dados do perfil
+•⁠  ⁠Conexão WhatsApp Business: campo para token Z-API/Evolution API por grupo, 
+  botão de teste de conexão, status da integração (conectado/desconectado)
+•⁠  ⁠Checklist de pré-requisitos WhatsApp Business:
+  ✓ Tenho o WhatsApp Business instalado
+  ✓ Migrei meu número para o WhatsApp Business
+  ✓ Tenho o token de conexão em mãos
+•⁠  ⁠Aviso fixo: "O PEGAPROMO utiliza esta conexão exclusivamente para envio de 
+  ofertas. Nenhum contato ou mensagem do grupo é lido ou armazenado."
+•⁠  ⁠Assinatura: plano atual, próxima data de cobrança, valor, botão para 
+  trocar de plano, atualizar cartão e cancelar assinatura (via Stripe portal)
+
+---
+
+## BLOQUEIO PÓS-TRIAL
+
+Quando o trial de 10 dias expira sem pagamento confirmado:
+•⁠  ⁠Acesso aos relatórios, métricas e dados financeiros é bloqueado
+•⁠  ⁠Ao tentar acessar qualquer tela bloqueada, o empreendedor é redirecionado 
+  para a Página de Conclusão de Compra
+•⁠  ⁠Funções básicas como visualizar grupos e histórico de envios permanecem 
+  acessíveis para não frustrar completamente o usuário
+•⁠  ⁠Banner de alerta fixo no topo do painel em todas as telas durante o período 
+  de trial e após expiração
+
+---
+
+## PAINEL DO COLABORADOR
+
+•⁠  ⁠Acesso restrito às funcionalidades autorizadas pelo empreendedor
+•⁠  ⁠Pode visualizar catálogo, criar agendamentos e ver histórico de envios
+•⁠  ⁠Não acessa financeiro, carteira digital, métricas avançadas nem configurações
+
+---
+
+## GERAÇÃO DE IMAGEM DE OFERTA (1:1)
+
+Cada oferta gera automaticamente uma imagem quadrada (1:1) com:
+•⁠  ⁠Fundo colorido com a cor de identidade do marketplace
+•⁠  ⁠Logo do marketplace no canto superior
+•⁠  ⁠Foto do produto centralizada e em destaque
+•⁠  ⁠Nome/título do produto
+•⁠  ⁠Preço original riscado em cinza + preço final em branco e grande
+•⁠  ⁠Badge circular vermelho com o percentual de desconto (ex: "-40%")
+•⁠  ⁠Cupom promocional em destaque (se houver), em pílula contrastante
+•⁠  ⁠Layout customizável pelo Admin por marketplace via editor de template
+
+No corpo da mensagem do WhatsApp, logo abaixo da imagem, o sistema envia 
+automaticamente o link encurtado rastreável único para aquele grupo.
+
+---
+
+## ENCURTADOR DE LINKS
+
+•⁠  ⁠Gerado automaticamente para cada combinação oferta + grupo, sem ação do usuário
+•⁠  ⁠O link encurtado redireciona para: URL original do produto no marketplace 
+  + parâmetros do código de afiliado do marketplace correspondente
+•⁠  ⁠Métricas de cliques disponíveis no painel admin e no painel do empreendedor 
+  (planos Pro e Business)
+
+---
+
+## CARTEIRA DIGITAL E COMISSÕES
+
+•⁠  ⁠Cada empreendedor possui uma carteira digital individual no PEGAPROMO
+•⁠  ⁠Fluxo de crédito:
+  1. Venda identificada via API do marketplace parceiro
+  2. Sistema calcula comissão: valor da venda × percentual fixo do marketplace
+  3. Comissão entra com status "A liberar" com data prevista = data da venda + 35 dias
+  4. Após 35 dias: status muda para "Disponível" e saldo é creditado na carteira
+  5. Empreendedor solicita saque a qualquer momento (sem valor mínimo)
+  6. Saque entra na fila com status "Pendente"
+  7. Admin processa o Pix manualmente e marca como "Processado"
+•⁠  ⁠O empreendedor cadastra uma chave Pix (CPF/CNPJ, e-mail, telefone ou aleatória) 
+  para recebimento
+•⁠  ⁠Não há valor mínimo para saque
+
+---
+
+## IDENTIDADE VISUAL
+
+•⁠  ⁠Nome da plataforma: PEGAPROMO
+•⁠  ⁠Cor primária: verde vibrante (#25D366 como referência)
+•⁠  ⁠Cor secundária: branco e cinza claro
+•⁠  ⁠Acento: verde escuro para hover e destaques
+•⁠  ⁠Estilo: vibrante, comercial, energia de promoção — botões grandes, 
+  badges de desconto, ícones expressivos
+•⁠  ⁠Mobile-first: bottom navigation no mobile, sidebar colapsável no desktop
+•⁠  ⁠Tipografia: sans-serif moderna com hierarquia clara de pesos
+•⁠  ⁠Logo: criar logotipo para PEGAPROMO com ícone que remeta a ofertas/promoções 
+  combinado com o conceito de capturar/pegar uma boa oferta
+
+---
+
+## INTEGRAÇÕES (implementar como mock/placeholder nas interfaces)
+
+•⁠  ⁠WhatsApp Business: Z-API ou Evolution API — exclusivamente para disparo de 
+  mensagens de oferta nos grupos. Nenhuma leitura, armazenamento ou processamento 
+  de mensagens, contatos ou dados de participantes.
+•⁠  ⁠API dos marketplaces: Shopee Affiliate API, Amazon Associates API, 
+  Mercado Livre Affiliate API, Temu Affiliate API — para recebimento automático 
+  de dados de vendas realizadas via links do PEGAPROMO
+•⁠  ⁠Extração de dados de produto: scraping/Open Graph do link do marketplace
+•⁠  ⁠Geração de imagem: canvas/server-side rendering com template customizável
+•⁠  ⁠Encurtador de links: serviço interno automático com rastreamento de cliques
+•⁠  ⁠Pagamento: Stripe com trial de 10 dias, cobrança recorrente mensal, 
+  Stripe Elements no cadastro, Stripe Customer Portal nas configurações
+•⁠  ⁠Pix: processamento manual pelo admin via chave Pix cadastrada pelo empreendedor
+•⁠  ⁠E-mail transacional: boas-vindas, alerta de fim de trial, falha de pagamento, 
+  comissão liberada na carteira, saque processado, relatório semanal
+
+---
+
+## OBSERVAÇÕES TÉCNICAS
+
+•⁠  ⁠Criar todas as telas com dados mock/placeholder para demonstração
+•⁠  ⁠React com Tailwind CSS
+•⁠  ⁠Componentizar: card de oferta, card de grupo, calendário de agendamento, 
+  preview de imagem gerada, badge de marketplace, banner oferta da semana, 
+  carteira digital, histórico de transações
+•⁠  ⁠Estados de loading, empty state e error em todas as listagens
+•⁠  ⁠Suporte a dark mode opcional
+•⁠  ⁠Sidebar colapsável no desktop, bottom navigation no mobile
+•⁠  ⁠Wizard de cadastro em etapas com validação por etapa
+•⁠  ⁠Stripe Elements integrado no passo de pagamento do wizard de cadastro
+•⁠  ⁠Nenhuma tela deve sugerir armazenamento de contatos, membros ou dados 
+  de participantes de grupos de WhatsApp
+•⁠  ⁠Gráficos financeiros com seletor de período reutilizável
