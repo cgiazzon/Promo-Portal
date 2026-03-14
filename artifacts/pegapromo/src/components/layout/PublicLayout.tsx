@@ -3,13 +3,13 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 function KeroPromoLogo({ size = "md" }: { size?: "sm" | "md" }) {
-  const dim = size === "sm" ? "w-9 h-9" : "w-11 h-11";
-  const textSize = size === "sm" ? "text-[10px]" : "text-xs";
+  const dim = size === "sm" ? 36 : 44;
   return (
-    <div className={`${dim} bg-[#25D366] rounded-xl flex flex-col items-center justify-center leading-none shadow-md`}>
-      <span className={`font-display font-black text-white ${textSize} tracking-tight`}>KERO</span>
-      <span className={`font-display font-black text-white ${textSize} tracking-tight -mt-0.5`}>PROMO</span>
-    </div>
+    <svg width={dim} height={dim} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KERO PROMO logo">
+      <rect width="44" height="44" rx="10" fill="#25D366" />
+      <text x="22" y="18" textAnchor="middle" dominantBaseline="central" fill="white" fontFamily="inherit" fontWeight="900" fontSize="12" letterSpacing="-0.5">KERO</text>
+      <text x="22" y="31" textAnchor="middle" dominantBaseline="central" fill="white" fontFamily="inherit" fontWeight="900" fontSize="12" letterSpacing="-0.5">PROMO</text>
+    </svg>
   );
 }
 
