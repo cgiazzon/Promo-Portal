@@ -2,7 +2,7 @@
 
 ## Overview
 
-PEGAPROMO — SaaS web portal (Brazilian Portuguese) for individual entrepreneurs managing WhatsApp offer groups as affiliates of Shopee, Temu, Amazon, and Mercado Livre. Built as a pnpm workspace monorepo using TypeScript.
+KERO PROMO (formerly PEGAPROMO) — SaaS web portal (Brazilian Portuguese) for individual entrepreneurs managing WhatsApp offer groups as affiliates of Shopee, Temu, Amazon, and Mercado Livre. Built as a pnpm workspace monorepo using TypeScript.
 
 ## Stack
 
@@ -46,7 +46,7 @@ artifacts-monorepo/
 ## Frontend Architecture (artifacts/pegapromo)
 
 ### Pages & Routing
-- **Public**: Landing (`/`), Pricing (`/precos`), Login (`/login`), Register (`/cadastro`), FAQ (`/faq`)
+- **Public**: Landing (`/` — single page with anchors #como-funciona, #planos, #faq), Login (`/login`), Register (`/cadastro`); `/precos` and `/faq` redirect to landing with anchor
 - **Entrepreneur** (`/dashboard/*`): Dashboard, Catalogo, Grupos, Agendamentos, Historico, Carteira, Comissoes, Colaboradores, Configuracoes
 - **Admin** (`/admin/*`): Dashboard, Ofertas, Marketplaces, Empreendedores, Comissoes, Saques, Assinaturas
 - **Collaborator** (`/collaborator/*`): Dashboard, Grupos, Historico

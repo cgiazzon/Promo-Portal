@@ -12,11 +12,11 @@ export default function Paywall() {
 
         <h1 className="text-3xl font-bold text-foreground mb-3">Seu periodo de teste acabou</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          Para continuar usando o PEGAPROMO e todas suas funcionalidades, escolha um plano e ative sua assinatura.
+          Para continuar usando o KERO PROMO e todas suas funcionalidades, escolha um plano e ative sua assinatura.
         </p>
 
         <div className="bg-card border border-border rounded-2xl p-8 mb-8 text-left">
-          <h2 className="text-xl font-bold text-foreground mb-4">Com o PEGAPROMO voce pode:</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">Com o KERO PROMO você pode:</h2>
           <ul className="space-y-3">
             {[
               "Enviar ofertas automaticamente para seus grupos de WhatsApp",
