@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
+
 export function DashboardLayout({ children, role: roleProp }: { children: React.ReactNode, role?: "admin" | "entrepreneur" | "collaborator" }) {
   const [location] = useLocation();
   const role = roleProp || (location.startsWith("/admin") ? "admin" : location.startsWith("/collaborator") ? "collaborator" : "entrepreneur");
@@ -52,11 +54,17 @@ export function DashboardLayout({ children, role: roleProp }: { children: React.
       <aside className="hidden lg:flex w-72 flex-col bg-card border-r border-border shadow-sm">
         <div className="h-20 flex items-center px-8 border-b border-border/50">
           <Link href={links[0].href} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="font-display font-bold text-white text-xl">P</span>
+            <div className="bg-[#25D366] flex items-center justify-center shrink-0 rounded-xl shadow-md shadow-primary/20" style={{ width: 40, height: 40 }}>
+              <img
+                src={`${basePath}/images/kero-logo.png`}
+                alt="KERO PROMO logo"
+                width={30}
+                height={30}
+                className="object-contain rounded-lg"
+              />
             </div>
             <span className="font-display font-bold text-xl tracking-tight text-foreground">
-              PEGA<span className="text-primary">PROMO</span>
+              KERO<span className="text-primary">PROMO</span>
             </span>
           </Link>
         </div>
@@ -106,8 +114,14 @@ export function DashboardLayout({ children, role: roleProp }: { children: React.
         {/* Mobile Header */}
         <header className="lg:hidden h-16 bg-card border-b border-border flex items-center justify-between px-4 sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="font-display font-bold text-white text-sm">P</span>
+            <div className="bg-[#25D366] flex items-center justify-center shrink-0 rounded-lg" style={{ width: 32, height: 32 }}>
+              <img
+                src={`${basePath}/images/kero-logo.png`}
+                alt="KERO PROMO logo"
+                width={24}
+                height={24}
+                className="object-contain rounded-md"
+              />
             </div>
           </div>
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-foreground">
