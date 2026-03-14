@@ -87,7 +87,7 @@ export default function Login() {
           
           <div className="mt-6 p-4 bg-muted/50 rounded-xl text-xs text-muted-foreground">
             <strong>Dica de Demonstração:</strong><br/>
-            Tente usar <code>admin@keropromo.com</code> ou <code>user@keropromo.com</code> com qualquer senha. O mock do backend deve responder.
+            Admin: <code>eduardo@oversaas.net</code> / <code>123456@7</code>. Para empreendedor, use qualquer e-mail com qualquer senha.
           </div>
         </div>
       </div>

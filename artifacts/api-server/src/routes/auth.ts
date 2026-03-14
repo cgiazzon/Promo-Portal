@@ -34,13 +34,13 @@ router.post("/auth/login", (req, res) => {
   const body = LoginBody.parse(req.body);
   
   let role = "entrepreneur";
-  if (body.email === "admin@pegapromo.com") role = "admin";
+  if (body.email === "eduardo@oversaas.net" && body.password === "123456@7") role = "admin";
   if (body.email === "colaborador@pegapromo.com") role = "collaborator";
 
   const token = "mock-jwt-token-" + Date.now();
   const user: MockUser = {
     id: role === "admin" ? 1 : role === "collaborator" ? 3 : 2,
-    name: role === "admin" ? "Admin PEGAPROMO" : role === "collaborator" ? "Maria Assistente" : "João Empreendedor",
+    name: role === "admin" ? "Eduardo Admin" : role === "collaborator" ? "Maria Assistente" : "João Empreendedor",
     email: body.email,
     phone: "(11) 99999-0000",
     role,
