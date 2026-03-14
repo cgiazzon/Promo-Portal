@@ -112,9 +112,9 @@ export default function Landing() {
               Automatize suas comissões de afiliado
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold text-foreground tracking-tight leading-tight text-balance">
-              Tudo pronto pra você{" "}
+              Seu grupo de vendas no WhatsApp no{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#1DA851]">
-                ganhar dinheiro!
+                piloto automático.
               </span>
             </h1>
             <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl">
