@@ -148,7 +148,7 @@ export default function Wallet() {
 
           <div className="mt-6 flex items-start gap-3 bg-blue-50 text-blue-800 p-3 rounded-xl text-xs font-medium">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
-            <p>Os saques são processados manualmente em até 2 dias úteis pela equipe PEGAPROMO.</p>
+            <p>Os saques são processados manualmente em até 2 dias úteis pela equipe KEROPROMO.</p>
           </div>
         </div>
       </div>

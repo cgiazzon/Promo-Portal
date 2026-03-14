@@ -102,7 +102,7 @@ export default function Groups() {
               <label className="block text-sm font-semibold mb-2">Token de Conexão (Z-API / Evolution API)</label>
               <input {...register("connectionToken")} placeholder="Cole seu token aqui" className="w-full px-4 py-3 rounded-xl border focus:border-primary outline-none font-mono text-sm" required />
               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4" /> O PEGAPROMO armazena este token criptografado apenas para o envio automático.
+                <ShieldCheck className="w-4 h-4" /> O KEROPROMO armazena este token criptografado apenas para o envio automático.
               </p>
             </div>
             <div className="flex justify-end pt-4">

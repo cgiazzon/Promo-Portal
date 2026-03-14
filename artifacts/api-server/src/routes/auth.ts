@@ -35,7 +35,7 @@ router.post("/auth/login", (req, res) => {
   
   let role = "entrepreneur";
   if (body.email === "eduardo@oversaas.net" && body.password === "123456@7") role = "admin";
-  if (body.email === "colaborador@pegapromo.com") role = "collaborator";
+  if (body.email === "colaborador@keropromo.com") role = "collaborator";
 
   const token = "mock-jwt-token-" + Date.now();
   const user: MockUser = {

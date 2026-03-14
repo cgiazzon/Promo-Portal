@@ -21,7 +21,7 @@ export default function AdminDashboard() {
     <DashboardLayout role="admin">
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-foreground">Visão Geral</h1>
-        <p className="text-muted-foreground mt-1">Métricas de saúde da plataforma PEGAPROMO.</p>
+        <p className="text-muted-foreground mt-1">Métricas de saúde da plataforma KEROPROMO.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
