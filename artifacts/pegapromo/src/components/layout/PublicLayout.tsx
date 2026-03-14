@@ -6,12 +6,21 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
 
 function KeroPromoLogo({ size = "md" }: { size?: "sm" | "md" }) {
   const dim = size === "sm" ? 36 : 44;
+  const innerDim = size === "sm" ? 28 : 34;
   return (
-    <svg width={dim} height={dim} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KERO PROMO logo">
-      <rect width="44" height="44" rx="10" fill="#25D366" />
-      <text x="22" y="18" textAnchor="middle" dominantBaseline="central" fill="white" fontFamily="inherit" fontWeight="900" fontSize="12" letterSpacing="-0.5">KERO</text>
-      <text x="22" y="31" textAnchor="middle" dominantBaseline="central" fill="white" fontFamily="inherit" fontWeight="900" fontSize="12" letterSpacing="-0.5">PROMO</text>
-    </svg>
+    <div
+      className="bg-[#25D366] flex items-center justify-center shrink-0"
+      style={{ width: dim, height: dim, borderRadius: 10 }}
+    >
+      <img
+        src={`${basePath}/images/kero-logo.png`}
+        alt="KERO PROMO logo"
+        width={innerDim}
+        height={innerDim}
+        className="object-contain"
+        style={{ borderRadius: 6 }}
+      />
+    </div>
   );
 }
 
