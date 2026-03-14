@@ -11,7 +11,7 @@ export function WhatsAppBanner({ type = "info" }: { type?: "info" | "checklist" 
           <div>
             <h3 className="text-lg font-bold text-green-900 font-display">Pré-requisitos de Conexão</h3>
             <p className="text-green-800 mt-1 mb-4">
-              Para conectar seus grupos ao PEGAPROMO, você precisa utilizar o WhatsApp Business.
+              Para conectar seus grupos ao KEROPROMO, você precisa utilizar o WhatsApp Business.
             </p>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-green-800 font-medium">
@@ -29,7 +29,7 @@ export function WhatsAppBanner({ type = "info" }: { type?: "info" | "checklist" 
             </ul>
             
             <p className="mt-5 text-sm text-green-700 bg-white/50 py-2 px-3 rounded-lg border border-green-100">
-              <strong>Privacidade garantida:</strong> O PEGAPROMO utiliza esta conexão exclusivamente para disparo de ofertas. Nenhum contato ou mensagem do grupo é lido ou armazenado.
+              <strong>Privacidade garantida:</strong> O KEROPROMO utiliza esta conexão exclusivamente para disparo de ofertas. Nenhum contato ou mensagem do grupo é lido ou armazenado.
             </p>
           </div>
         </div>
@@ -44,7 +44,7 @@ export function WhatsAppBanner({ type = "info" }: { type?: "info" | "checklist" 
       </div>
       <div className="flex-1">
         <p className="text-sm text-blue-900 font-medium">
-          Ainda usa o WhatsApp comum? O PEGAPROMO exige o WhatsApp Business para funcionar corretamente.
+          Ainda usa o WhatsApp comum? O KEROPROMO exige o WhatsApp Business para funcionar corretamente.
         </p>
       </div>
       <a 

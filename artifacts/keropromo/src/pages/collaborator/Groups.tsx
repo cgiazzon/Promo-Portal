@@ -16,7 +16,7 @@ export default function CollaboratorGroups() {
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-sm text-yellow-800">
-          <strong>Importante:</strong> O PEGAPROMO nao armazena contatos ou dados de participantes dos grupos. Apenas o nome, nicho e token de conexao sao utilizados.
+          <strong>Importante:</strong> O KEROPROMO nao armazena contatos ou dados de participantes dos grupos. Apenas o nome, nicho e token de conexao sao utilizados.
         </div>
 
         {isLoading ? (

@@ -2,7 +2,7 @@
 
 ## Overview
 
-KERO PROMO (formerly PEGAPROMO) — SaaS web portal (Brazilian Portuguese) for individual entrepreneurs managing WhatsApp offer groups as affiliates of Shopee, Temu, Amazon, and Mercado Livre. Built as a pnpm workspace monorepo using TypeScript.
+KEROPROMO — SaaS web portal (Brazilian Portuguese) for individual entrepreneurs managing WhatsApp offer groups as affiliates of Shopee, Temu, Amazon, and Mercado Livre. Built as a pnpm workspace monorepo using TypeScript.
 
 ## Stack
 
@@ -30,7 +30,7 @@ KERO PROMO (formerly PEGAPROMO) — SaaS web portal (Brazilian Portuguese) for i
 artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server (port 8080)
-│   └── pegapromo/          # React + Vite frontend (slug: pegapromo, previewPath: /)
+│   └── keropromo/          # React + Vite frontend (slug: keropromo, previewPath: /)
 ├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -43,7 +43,7 @@ artifacts-monorepo/
 └── package.json
 ```
 
-## Frontend Architecture (artifacts/pegapromo)
+## Frontend Architecture (artifacts/keropromo)
 
 ### Pages & Routing
 - **Public**: Landing (`/` — single page with anchors #como-funciona, #planos, #faq), Login (`/login`), Register (`/cadastro`); `/precos` and `/faq` redirect to landing with anchor
@@ -101,11 +101,11 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 ## Key Design Decisions
 
 - All UI text is in Brazilian Portuguese (pt-BR)
-- PEGAPROMO does NOT store WhatsApp contacts/members — only group name, niche, and connection token
+- KEROPROMO does NOT store WhatsApp contacts/members — only group name, niche, and connection token
 - WhatsApp integration (Z-API/Evolution API) is mocked/placeholder
 - Stripe payments are mocked/placeholder
 - Marketplace APIs are mocked with realistic sample data
 - Plans: Starter (1 group, 30 sends/mo), Pro (3 groups, 150 sends/mo, 2 collab), Business (unlimited)
 - 3 user roles: admin, entrepreneur, collaborator
-- Pix withdrawals are manually processed by the PEGAPROMO team
+- Pix withdrawals are manually processed by the KEROPROMO team
 - Commission confirmation takes ~35 days from marketplace

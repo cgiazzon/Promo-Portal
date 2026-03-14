@@ -1,8 +1,8 @@
 kind = "web"
 previewPath = "/"
-title = "PEGAPROMO"
+title = "KEROPROMO"
 version = "1.0.0"
-id = "artifacts/pegapromo"
+id = "artifacts/keropromo"
 router = "path"
 
 [[integratedSkills]]
@@ -15,15 +15,15 @@ name = "web"
 paths = ["/"]
 
 [services.development]
-run = "pnpm --filter @workspace/pegapromo run dev"
+run = "pnpm --filter @workspace/keropromo run dev"
 
 [services.env]
 PORT = "24846"
 BASE_PATH = "/"
 
 [services.production]
-build = ["pnpm", "--filter", "@workspace/pegapromo", "run", "build"]
-publicDir = "artifacts/pegapromo/dist/public"
+build = ["pnpm", "--filter", "@workspace/keropromo", "run", "build"]
+publicDir = "artifacts/keropromo/dist/public"
 serve = "static"
 
 [[services.production.rewrites]]
