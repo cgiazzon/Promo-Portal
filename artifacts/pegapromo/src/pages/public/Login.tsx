@@ -35,7 +35,7 @@ export default function Login() {
         <div className="w-full max-w-md bg-card border border-border/50 rounded-3xl shadow-xl shadow-black/5 p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-display font-bold text-foreground">Bem-vindo de volta!</h1>
-            <p className="text-muted-foreground mt-2">Acesse seu painel PEGAPROMO</p>
+            <p className="text-muted-foreground mt-2">Acesse seu painel KERO PROMO</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -87,7 +87,7 @@ export default function Login() {
           
           <div className="mt-6 p-4 bg-muted/50 rounded-xl text-xs text-muted-foreground">
             <strong>Dica de Demonstração:</strong><br/>
-            Tente usar <code>admin@pegapromo.com</code> ou <code>user@pegapromo.com</code> com qualquer senha. O mock do backend deve responder.
+            Tente usar <code>admin@keropromo.com</code> ou <code>user@keropromo.com</code> com qualquer senha. O mock do backend deve responder.
           </div>
         </div>
       </div>

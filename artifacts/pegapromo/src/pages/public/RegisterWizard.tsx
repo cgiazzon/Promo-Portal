@@ -187,7 +187,7 @@ export default function RegisterWizard() {
                   <Check className="w-10 h-10" />
                 </div>
                 <h2 className="text-3xl font-display font-black text-foreground mb-4">Conta criada com sucesso!</h2>
-                <p className="text-lg text-muted-foreground mb-8">Seja bem-vindo ao PEGAPROMO.</p>
+                <p className="text-lg text-muted-foreground mb-8">Seja bem-vindo ao KERO PROMO.</p>
                 
                 <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl text-left mb-8">
                   <h3 className="font-bold text-blue-900 flex items-center gap-2 mb-2">
