@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
+
 function KeroPromoLogo({ size = "md" }: { size?: "sm" | "md" }) {
   const dim = size === "sm" ? 36 : 44;
   return (
@@ -29,9 +31,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="/#como-funciona" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
-            <a href="/#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
-            <a href="/#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+            <a href={`${basePath}/#como-funciona`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
+            <a href={`${basePath}/#planos`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
+            <a href={`${basePath}/#faq`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-bold text-foreground hover:text-primary transition-colors">
@@ -51,9 +53,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-lg">
             <nav className="flex flex-col px-4 py-4 gap-3">
-              <a href="/#como-funciona" className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>Como funciona</a>
-              <a href="/#planos" className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>Planos</a>
-              <a href="/#faq" className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
+              <a href={`${basePath}/#como-funciona`} className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>Como funciona</a>
+              <a href={`${basePath}/#planos`} className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>Planos</a>
+              <a href={`${basePath}/#faq`} className="text-sm font-medium text-foreground py-2" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
               <Link href="/cadastro" className="mt-2 px-5 py-2.5 bg-lime-500 text-white rounded-xl font-bold text-center" onClick={() => setMobileMenuOpen(false)}>
                 Teste Grátis
               </Link>
@@ -94,9 +96,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-4">Produto</h4>
               <ul className="space-y-3">
-                <li><a href="/#como-funciona" className="text-sm text-gray-400 hover:text-white transition-colors">Como funciona</a></li>
-                <li><a href="/#planos" className="text-sm text-gray-400 hover:text-white transition-colors">Planos</a></li>
-                <li><a href="/#faq" className="text-sm text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+                <li><a href={`${basePath}/#como-funciona`} className="text-sm text-gray-400 hover:text-white transition-colors">Como funciona</a></li>
+                <li><a href={`${basePath}/#planos`} className="text-sm text-gray-400 hover:text-white transition-colors">Planos</a></li>
+                <li><a href={`${basePath}/#faq`} className="text-sm text-gray-400 hover:text-white transition-colors">FAQ</a></li>
                 <li><Link href="/cadastro" className="text-sm text-gray-400 hover:text-white transition-colors">Cadastre-se</Link></li>
               </ul>
             </div>
