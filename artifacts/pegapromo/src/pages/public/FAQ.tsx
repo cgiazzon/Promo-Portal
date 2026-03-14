@@ -1,16 +1,10 @@
 import { useEffect } from "react";
-import { useLocation } from "wouter";
 
 export default function FAQ() {
-  const [, setLocation] = useLocation();
-
   useEffect(() => {
-    setLocation("/");
-    setTimeout(() => {
-      const el = document.getElementById("faq");
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }, [setLocation]);
+    const base = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
+    window.location.replace(`${base}/#faq`);
+  }, []);
 
   return null;
 }

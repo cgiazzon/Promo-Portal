@@ -148,33 +148,43 @@ export default function Landing() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
             <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <div className="w-10 h-10 bg-[#FFE600] rounded-lg flex items-center justify-center">
-                <span className="font-black text-[#2D3277] text-xs">ML</span>
-              </div>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mercado Livre">
+                <rect width="40" height="40" rx="8" fill="#FFE600"/>
+                <path d="M20 10c-2.5 0-5 1.5-6 4-1 2.5-.5 5 1 7s4 3 6 3 4.5-1 6-3 2-4.5 1-7c-1-2.5-3.5-4-6-4h-2zm0 2c1.5 0 3 .8 3.8 2.2.8 1.4.6 3-.3 4.2-.9 1.2-2.3 1.8-3.5 1.8s-2.6-.6-3.5-1.8c-.9-1.2-1.1-2.8-.3-4.2C17 12.8 18.5 12 20 12z" fill="#2D3277"/>
+              </svg>
               <span className="font-bold text-foreground text-sm hidden sm:block">Mercado Livre</span>
             </div>
             <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <div className="w-10 h-10 bg-[#0086FF] rounded-lg flex items-center justify-center">
-                <span className="font-black text-white text-xs">Mg</span>
-              </div>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Magalu">
+                <rect width="40" height="40" rx="8" fill="#0086FF"/>
+                <circle cx="20" cy="16" r="5" fill="white"/>
+                <path d="M13 28c0-4 3-7 7-7s7 3 7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+              </svg>
               <span className="font-bold text-foreground text-sm hidden sm:block">Magalu</span>
             </div>
             <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <div className="w-10 h-10 bg-[#EE4D2D] rounded-lg flex items-center justify-center">
-                <span className="font-black text-white text-xs">S</span>
-              </div>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Shopee">
+                <rect width="40" height="40" rx="8" fill="#EE4D2D"/>
+                <path d="M20 11c-2.8 0-5.2 1.8-6 4.5h12c-.8-2.7-3.2-4.5-6-4.5z" fill="white"/>
+                <rect x="13" y="17" width="14" height="3" rx="1.5" fill="white"/>
+                <path d="M15 22v5c0 1 .8 2 1.8 2h6.4c1 0 1.8-1 1.8-2v-5" stroke="white" strokeWidth="2" fill="none"/>
+              </svg>
               <span className="font-bold text-foreground text-sm hidden sm:block">Shopee</span>
             </div>
             <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <div className="w-10 h-10 bg-[#FF9900] rounded-lg flex items-center justify-center">
-                <span className="font-black text-[#232F3E] text-xs">az</span>
-              </div>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Amazon">
+                <rect width="40" height="40" rx="8" fill="#232F3E"/>
+                <path d="M12 22c2.5 2.5 6 4 9 4s5.5-1 7-2.5" stroke="#FF9900" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                <path d="M26 21l2 2.5 2-1" stroke="#FF9900" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <text x="20" y="18" textAnchor="middle" dominantBaseline="central" fill="white" fontWeight="700" fontSize="11">a</text>
+              </svg>
               <span className="font-bold text-foreground text-sm hidden sm:block">Amazon</span>
             </div>
             <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <div className="w-10 h-10 bg-[#FB7701] rounded-lg flex items-center justify-center">
-                <span className="font-black text-white text-xs">T</span>
-              </div>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Temu">
+                <rect width="40" height="40" rx="8" fill="#FB7701"/>
+                <text x="20" y="22" textAnchor="middle" dominantBaseline="central" fill="white" fontWeight="900" fontSize="14" fontFamily="inherit">Temu</text>
+              </svg>
               <span className="font-bold text-foreground text-sm hidden sm:block">Temu</span>
             </div>
           </div>
