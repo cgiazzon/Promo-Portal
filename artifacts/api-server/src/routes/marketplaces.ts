@@ -5,7 +5,7 @@ import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/marketplaces", async (_req, res): Promise<void> => {
+router.get("/marketplaces", requireAuth, requireRole("admin"), async (_req, res): Promise<void> => {
   try {
     const mps = await db.select().from(marketplacesTable);
     res.json(mps);
