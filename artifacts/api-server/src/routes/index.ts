@@ -13,6 +13,7 @@ import plansRouter from "./plans";
 import featuredRouter from "./featured";
 import adminRouter from "./admin";
 import entrepreneurRouter from "./entrepreneur";
+import shortLinksRouter from "./shortLinks";
 import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -22,6 +23,7 @@ router.use(authRouter);
 router.use(plansRouter);
 router.use(featuredRouter);
 router.use(marketplacesRouter);
+router.use(shortLinksRouter);
 
 router.use(requireAuth);
 router.use(offersRouter);

@@ -1,6 +1,50 @@
 import { Router, type IRouter } from "express";
 import { eq, and, inArray } from "drizzle-orm";
-import { db, schedulesTable, offersTable, groupsTable } from "@workspace/db";
+import { db, schedulesTable, offersTable, groupsTable, shortLinksTable } from "@workspace/db";
+
+function generateShortCode(length = 6): string {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+async function createShortLinkForOffer(
+  entrepreneurId: number,
+  offerId: number
+): Promise<string | null> {
+  const [offer] = await db
+    .select({ productUrl: offersTable.productUrl, marketplaceId: offersTable.marketplaceId })
+    .from(offersTable)
+    .where(eq(offersTable.id, offerId))
+    .limit(1);
+
+  if (!offer?.productUrl) return null;
+
+  let shortCode = generateShortCode();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const existing = await db
+      .select({ id: shortLinksTable.id })
+      .from(shortLinksTable)
+      .where(eq(shortLinksTable.shortCode, shortCode))
+      .limit(1);
+    if (existing.length === 0) break;
+    shortCode = generateShortCode();
+  }
+
+  await db.insert(shortLinksTable).values({
+    entrepreneurId,
+    originalUrl: offer.productUrl,
+    shortCode,
+    marketplaceId: offer.marketplaceId,
+    clicks: 0,
+    active: true,
+  });
+
+  return `/s/${shortCode}`;
+}
 
 const router: IRouter = Router();
 
@@ -82,6 +126,8 @@ router.post("/schedules", async (req, res): Promise<void> => {
       }
     }
 
+    const autoShortUrl = shortUrl ?? (await createShortLinkForOffer(entrepreneurId, offerId));
+
     const [schedule] = await db
       .insert(schedulesTable)
       .values({
@@ -90,7 +136,7 @@ router.post("/schedules", async (req, res): Promise<void> => {
         groupIds: JSON.stringify(groupIds ?? []),
         scheduledAt: new Date(scheduledAt),
         status: "pending",
-        shortUrl: shortUrl ?? null,
+        shortUrl: autoShortUrl ?? null,
       })
       .returning();
 
