@@ -177,7 +177,7 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
       .where(eq(refreshTokensTable.tokenHash, tokenHash))
       .limit(1);
 
-    if (!stored || stored.expiresAt < new Date()) {
+    if (!stored || stored.expiresAt < new Date() || stored.userId !== payload.sub) {
       res.status(401).json({ message: "Refresh token inválido ou expirado" });
       return;
     }
