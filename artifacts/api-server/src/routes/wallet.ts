@@ -1,49 +1,146 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
+import { db, walletsTable, commissionsTable, walletTransactionsTable, withdrawalsTable } from "@workspace/db";
 import { UpdatePixKeyBody, RequestWithdrawalBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-const mockWallet = {
-  id: 1,
-  availableBalance: 847.50,
-  pendingBalance: 1234.80,
-  totalWithdrawn: 2560.00,
-  pixKeyType: "cpf",
-  pixKey: "123.456.789-00",
-  pendingCommissions: [
-    { id: 1, saleAmount: 189.90, commissionPercent: 8.5, commissionAmount: 16.14, marketplaceName: "Shopee", offerTitle: "Fone Bluetooth TWS Pro 5.0", groupName: "Ofertas Tech & Games", status: "pending", saleDate: new Date(Date.now() - 10 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 25 * 86400000).toISOString() },
-    { id: 2, saleAmount: 249.00, commissionPercent: 6.0, commissionAmount: 14.94, marketplaceName: "Amazon", offerTitle: "Echo Dot 5ª Geração", groupName: "Ofertas Tech & Games", status: "pending", saleDate: new Date(Date.now() - 5 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 30 * 86400000).toISOString() },
-    { id: 3, saleAmount: 499.90, commissionPercent: 8.5, commissionAmount: 42.49, marketplaceName: "Shopee", offerTitle: "Aspirador Robô Inteligente", groupName: "Promos Casa & Decoração", status: "pending", saleDate: new Date(Date.now() - 15 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 20 * 86400000).toISOString() },
-  ],
-  transactions: [
-    { id: 1, type: "credit", amount: 42.49, description: "Comissão - Aspirador Robô Inteligente (Shopee)", createdAt: new Date(Date.now() - 2 * 86400000).toISOString() },
-    { id: 2, type: "credit", amount: 18.74, description: "Comissão - Panela Elétrica (Mercado Livre)", createdAt: new Date(Date.now() - 5 * 86400000).toISOString() },
-    { id: 3, type: "debit", amount: -350.00, description: "Saque via Pix - CPF 123.456.789-00", createdAt: new Date(Date.now() - 7 * 86400000).toISOString() },
-    { id: 4, type: "credit", amount: 89.90, description: "Comissão - Kit Camisetas (Temu)", createdAt: new Date(Date.now() - 10 * 86400000).toISOString() },
-    { id: 5, type: "credit", amount: 14.94, description: "Comissão - Echo Dot (Amazon)", createdAt: new Date(Date.now() - 12 * 86400000).toISOString() },
-  ],
-};
+async function getOrCreateWallet(entrepreneurId: number) {
+  const [existing] = await db
+    .select()
+    .from(walletsTable)
+    .where(eq(walletsTable.entrepreneurId, entrepreneurId))
+    .limit(1);
+  if (existing) return existing;
 
-router.get("/wallet", (_req, res) => {
-  res.json(mockWallet);
+  const [created] = await db
+    .insert(walletsTable)
+    .values({ entrepreneurId, availableBalance: 0, pendingBalance: 0, totalWithdrawn: 0 })
+    .returning();
+  return created;
+}
+
+router.get("/wallet", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const wallet = await getOrCreateWallet(entrepreneurId);
+
+    const pendingCommissions = await db
+      .select()
+      .from(commissionsTable)
+      .where(eq(commissionsTable.entrepreneurId, entrepreneurId));
+
+    const transactions = await db
+      .select()
+      .from(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.walletId, wallet.id));
+
+    res.json({
+      id: wallet.id,
+      availableBalance: wallet.availableBalance,
+      pendingBalance: wallet.pendingBalance,
+      totalWithdrawn: wallet.totalWithdrawn,
+      pixKeyType: wallet.pixKeyType,
+      pixKey: wallet.pixKey,
+      pendingCommissions: pendingCommissions.map(c => ({
+        id: c.id,
+        saleAmount: c.saleAmount,
+        commissionPercent: c.commissionPercent,
+        commissionAmount: c.commissionAmount,
+        marketplaceName: c.marketplaceName,
+        offerTitle: c.offerTitle,
+        groupName: c.groupName,
+        status: c.status,
+        saleDate: c.saleDate.toISOString(),
+        releaseDate: c.releaseDate.toISOString(),
+      })),
+      transactions: transactions.map(t => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        description: t.description,
+        createdAt: t.createdAt.toISOString(),
+      })),
+    });
+  } catch (e) {
+    console.error("GET /wallet error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.put("/wallet/pix-key", (req, res) => {
-  const body = UpdatePixKeyBody.parse(req.body);
-  res.json({ ...mockWallet, pixKeyType: body.pixKeyType, pixKey: body.pixKey });
+router.put("/wallet/pix-key", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const body = UpdatePixKeyBody.parse(req.body);
+    const wallet = await getOrCreateWallet(entrepreneurId);
+
+    const [updated] = await db
+      .update(walletsTable)
+      .set({ pixKeyType: body.pixKeyType, pixKey: body.pixKey })
+      .where(eq(walletsTable.id, wallet.id))
+      .returning();
+
+    res.json({ pixKeyType: updated.pixKeyType, pixKey: updated.pixKey });
+  } catch (e) {
+    console.error("PUT /wallet/pix-key error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.post("/wallet/withdraw", (req, res) => {
-  const body = RequestWithdrawalBody.parse(req.body);
-  res.status(201).json({
-    id: 10,
-    amount: body.amount,
-    pixKey: mockWallet.pixKey,
-    pixKeyType: mockWallet.pixKeyType,
-    status: "pending",
-    requestedAt: new Date().toISOString(),
-    processedAt: null,
-  });
+router.post("/wallet/withdraw", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const body = RequestWithdrawalBody.parse(req.body);
+    const wallet = await getOrCreateWallet(entrepreneurId);
+
+    if (!wallet.pixKey || !wallet.pixKeyType) {
+      res.status(400).json({ message: "Configure sua chave Pix antes de sacar" });
+      return;
+    }
+    if (wallet.availableBalance < body.amount) {
+      res.status(400).json({ message: "Saldo insuficiente" });
+      return;
+    }
+
+    const [withdrawal] = await db
+      .insert(withdrawalsTable)
+      .values({
+        entrepreneurId,
+        amount: body.amount,
+        pixKey: wallet.pixKey,
+        pixKeyType: wallet.pixKeyType,
+        status: "pending",
+      })
+      .returning();
+
+    await db
+      .update(walletsTable)
+      .set({
+        availableBalance: wallet.availableBalance - body.amount,
+        totalWithdrawn: wallet.totalWithdrawn + body.amount,
+      })
+      .where(eq(walletsTable.id, wallet.id));
+
+    await db.insert(walletTransactionsTable).values({
+      walletId: wallet.id,
+      type: "debit",
+      amount: -body.amount,
+      description: `Saque via Pix - ${wallet.pixKeyType?.toUpperCase()} ${wallet.pixKey}`,
+    });
+
+    res.status(201).json({
+      id: withdrawal.id,
+      amount: withdrawal.amount,
+      pixKey: withdrawal.pixKey,
+      pixKeyType: withdrawal.pixKeyType,
+      status: withdrawal.status,
+      requestedAt: withdrawal.requestedAt.toISOString(),
+      processedAt: null,
+    });
+  } catch (e) {
+    console.error("POST /wallet/withdraw error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;

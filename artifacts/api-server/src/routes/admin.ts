@@ -1,68 +1,248 @@
 import { Router, type IRouter } from "express";
+import { eq, sql, count, sum } from "drizzle-orm";
+import {
+  db, usersTable, groupsTable, offersTable, sendHistoryTable,
+  walletsTable, commissionsTable, withdrawalsTable, plansTable,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
-router.get("/admin/dashboard", (_req, res) => {
-  res.json({
-    activeEntrepreneurs: 127,
-    totalGroups: 342,
-    totalOffersSent: 8945,
-    totalClicks: 45230,
-    mrr: 3847.30,
-    subscriptionsByPlan: { Starter: 45, Pro: 62, Business: 20 },
-    commissionsToRelease: 12450.80,
-    pendingWithdrawals: 3200.00,
-    pendingWithdrawalsCount: 8,
-  });
+router.get("/admin/dashboard", async (_req, res): Promise<void> => {
+  try {
+    const [[{ total: activeEntrepreneurs }]] = await Promise.all([
+      db.select({ total: count() }).from(usersTable).where(eq(usersTable.role, "entrepreneur")),
+    ]);
+
+    const [[{ total: totalGroups }]] = await Promise.all([
+      db.select({ total: count() }).from(groupsTable),
+    ]);
+
+    const [[{ total: totalOffersSent }]] = await Promise.all([
+      db.select({ total: count() }).from(sendHistoryTable),
+    ]);
+
+    const [[{ total: totalClicks }]] = await Promise.all([
+      db.select({ total: sum(sendHistoryTable.clicks) }).from(sendHistoryTable),
+    ]);
+
+    const pendingWithdrawalsRows = await db
+      .select({ amount: withdrawalsTable.amount })
+      .from(withdrawalsTable)
+      .where(eq(withdrawalsTable.status, "pending"));
+    const pendingWithdrawals = pendingWithdrawalsRows.reduce((s, w) => s + w.amount, 0);
+    const pendingWithdrawalsCount = pendingWithdrawalsRows.length;
+
+    const pendingCommissionsRows = await db
+      .select({ amount: commissionsTable.commissionAmount })
+      .from(commissionsTable)
+      .where(eq(commissionsTable.status, "pending"));
+    const commissionsToRelease = pendingCommissionsRows.reduce((s, c) => s + c.amount, 0);
+
+    const entrepreneursWithPlans = await db
+      .select({ status: usersTable.status, planId: usersTable.planId, price: plansTable.price })
+      .from(usersTable)
+      .leftJoin(plansTable, eq(usersTable.planId, plansTable.id))
+      .where(eq(usersTable.role, "entrepreneur"));
+
+    const subscriptionsByPlan: Record<string, number> = {};
+    let mrr = 0;
+    for (const row of entrepreneursWithPlans) {
+      if (row.status === "active" && row.price) {
+        mrr += row.price;
+      }
+    }
+
+    const plans = await db.select().from(plansTable);
+    for (const plan of plans) {
+      subscriptionsByPlan[plan.name] = entrepreneursWithPlans.filter(e => e.planId === plan.id).length;
+    }
+
+    res.json({
+      activeEntrepreneurs: Number(activeEntrepreneurs),
+      totalGroups: Number(totalGroups),
+      totalOffersSent: Number(totalOffersSent),
+      totalClicks: Number(totalClicks ?? 0),
+      mrr,
+      subscriptionsByPlan,
+      commissionsToRelease,
+      pendingWithdrawals,
+      pendingWithdrawalsCount,
+    });
+  } catch (e) {
+    console.error("GET /admin/dashboard error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.get("/admin/entrepreneurs", (_req, res) => {
-  res.json([
-    { id: 1, name: "João Empreendedor", email: "joao@email.com", phone: "(11) 99999-0000", status: "active", planName: "Pro", trialEndsAt: null, groupCount: 3, scheduledOffers: 12, walletBalance: 847.50, createdAt: new Date("2025-01-15").toISOString() },
-    { id: 2, name: "Ana Santos", email: "ana@email.com", phone: "(21) 98888-1111", status: "active", planName: "Business", trialEndsAt: null, groupCount: 8, scheduledOffers: 45, walletBalance: 2340.00, createdAt: new Date("2025-01-20").toISOString() },
-    { id: 3, name: "Carlos Oliveira", email: "carlos@email.com", phone: "(31) 97777-2222", status: "trial", planName: "Starter", trialEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(), groupCount: 1, scheduledOffers: 5, walletBalance: 0, createdAt: new Date("2025-03-08").toISOString() },
-    { id: 4, name: "Fernanda Lima", email: "fernanda@email.com", phone: "(41) 96666-3333", status: "overdue", planName: "Pro", trialEndsAt: null, groupCount: 2, scheduledOffers: 0, walletBalance: 156.30, createdAt: new Date("2025-02-10").toISOString() },
-    { id: 5, name: "Ricardo Mendes", email: "ricardo@email.com", phone: "(51) 95555-4444", status: "cancelled", planName: "Starter", trialEndsAt: null, groupCount: 0, scheduledOffers: 0, walletBalance: 0, createdAt: new Date("2025-02-01").toISOString() },
-  ]);
+router.get("/admin/entrepreneurs", async (_req, res): Promise<void> => {
+  try {
+    const entrepreneurs = await db
+      .select({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        phone: usersTable.phone,
+        status: usersTable.status,
+        planId: usersTable.planId,
+        planName: plansTable.name,
+        trialEndsAt: usersTable.trialEndsAt,
+        createdAt: usersTable.createdAt,
+      })
+      .from(usersTable)
+      .leftJoin(plansTable, eq(usersTable.planId, plansTable.id))
+      .where(eq(usersTable.role, "entrepreneur"));
+
+    const enriched = await Promise.all(entrepreneurs.map(async (e) => {
+      const [[{ groupCount }]] = await Promise.all([
+        db.select({ groupCount: count() }).from(groupsTable).where(eq(groupsTable.entrepreneurId, e.id)),
+      ]);
+      const [wallet] = await db.select({ balance: walletsTable.availableBalance }).from(walletsTable).where(eq(walletsTable.entrepreneurId, e.id)).limit(1);
+      return {
+        id: e.id,
+        name: e.name,
+        email: e.email,
+        phone: e.phone,
+        status: e.status,
+        planName: e.planName ?? null,
+        trialEndsAt: e.trialEndsAt?.toISOString() ?? null,
+        groupCount: Number(groupCount),
+        scheduledOffers: 0,
+        walletBalance: wallet?.balance ?? 0,
+        createdAt: e.createdAt.toISOString(),
+      };
+    }));
+
+    res.json(enriched);
+  } catch (e) {
+    console.error("GET /admin/entrepreneurs error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.get("/admin/commissions", (_req, res) => {
-  res.json([
-    { id: 1, entrepreneurName: "João Empreendedor", saleAmount: 189.90, commissionPercent: 8.5, commissionAmount: 16.14, marketplaceName: "Shopee", offerTitle: "Fone Bluetooth TWS Pro 5.0", groupName: "Ofertas Tech & Games", status: "available", saleDate: new Date(Date.now() - 40 * 86400000).toISOString(), releaseDate: new Date(Date.now() - 5 * 86400000).toISOString() },
-    { id: 2, entrepreneurName: "Ana Santos", saleAmount: 499.90, commissionPercent: 10.0, commissionAmount: 49.99, marketplaceName: "Temu", offerTitle: "Kit Camisetas Premium", groupName: "Moda Feminina", status: "pending", saleDate: new Date(Date.now() - 10 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 25 * 86400000).toISOString() },
-    { id: 3, entrepreneurName: "João Empreendedor", saleAmount: 249.00, commissionPercent: 6.0, commissionAmount: 14.94, marketplaceName: "Amazon", offerTitle: "Echo Dot 5ª Geração", groupName: "Ofertas Tech & Games", status: "pending", saleDate: new Date(Date.now() - 5 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 30 * 86400000).toISOString() },
-    { id: 4, entrepreneurName: "Ana Santos", saleAmount: 899.90, commissionPercent: 7.5, commissionAmount: 67.49, marketplaceName: "Mercado Livre", offerTitle: "Notebook Acer Aspire", groupName: "Tech Offers", status: "withdrawn", saleDate: new Date(Date.now() - 50 * 86400000).toISOString(), releaseDate: new Date(Date.now() - 15 * 86400000).toISOString() },
-  ]);
+router.get("/admin/commissions", async (_req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: commissionsTable.id,
+        entrepreneurName: usersTable.name,
+        saleAmount: commissionsTable.saleAmount,
+        commissionPercent: commissionsTable.commissionPercent,
+        commissionAmount: commissionsTable.commissionAmount,
+        marketplaceName: commissionsTable.marketplaceName,
+        offerTitle: commissionsTable.offerTitle,
+        groupName: commissionsTable.groupName,
+        status: commissionsTable.status,
+        saleDate: commissionsTable.saleDate,
+        releaseDate: commissionsTable.releaseDate,
+      })
+      .from(commissionsTable)
+      .leftJoin(usersTable, eq(commissionsTable.entrepreneurId, usersTable.id));
+
+    res.json(rows.map(r => ({
+      ...r,
+      saleDate: r.saleDate.toISOString(),
+      releaseDate: r.releaseDate.toISOString(),
+    })));
+  } catch (e) {
+    console.error("GET /admin/commissions error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.get("/admin/withdrawals", (_req, res) => {
-  res.json([
-    { id: 1, entrepreneurName: "João Empreendedor", amount: 350.00, pixKey: "123.456.789-00", pixKeyType: "cpf", status: "pending", requestedAt: new Date(Date.now() - 1 * 86400000).toISOString(), processedAt: null },
-    { id: 2, entrepreneurName: "Ana Santos", amount: 500.00, pixKey: "ana@email.com", pixKeyType: "email", status: "pending", requestedAt: new Date(Date.now() - 2 * 86400000).toISOString(), processedAt: null },
-    { id: 3, entrepreneurName: "João Empreendedor", amount: 200.00, pixKey: "123.456.789-00", pixKeyType: "cpf", status: "processed", requestedAt: new Date(Date.now() - 10 * 86400000).toISOString(), processedAt: new Date(Date.now() - 8 * 86400000).toISOString() },
-  ]);
+router.get("/admin/withdrawals", async (_req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: withdrawalsTable.id,
+        entrepreneurName: usersTable.name,
+        amount: withdrawalsTable.amount,
+        pixKey: withdrawalsTable.pixKey,
+        pixKeyType: withdrawalsTable.pixKeyType,
+        status: withdrawalsTable.status,
+        requestedAt: withdrawalsTable.requestedAt,
+        processedAt: withdrawalsTable.processedAt,
+      })
+      .from(withdrawalsTable)
+      .leftJoin(usersTable, eq(withdrawalsTable.entrepreneurId, usersTable.id));
+
+    res.json(rows.map(r => ({
+      ...r,
+      requestedAt: r.requestedAt.toISOString(),
+      processedAt: r.processedAt?.toISOString() ?? null,
+    })));
+  } catch (e) {
+    console.error("GET /admin/withdrawals error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.post("/admin/withdrawals/:id/process", (req, res) => {
-  res.json({
-    id: parseInt(req.params.id),
-    entrepreneurName: "Empreendedor",
-    amount: 350.00,
-    pixKey: "123.456.789-00",
-    pixKeyType: "cpf",
-    status: "processed",
-    requestedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-    processedAt: new Date().toISOString(),
-  });
+router.post("/admin/withdrawals/:id/process", async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id);
+    const [withdrawal] = await db
+      .select({
+        id: withdrawalsTable.id,
+        entrepreneurName: usersTable.name,
+        amount: withdrawalsTable.amount,
+        pixKey: withdrawalsTable.pixKey,
+        pixKeyType: withdrawalsTable.pixKeyType,
+        status: withdrawalsTable.status,
+        requestedAt: withdrawalsTable.requestedAt,
+      })
+      .from(withdrawalsTable)
+      .leftJoin(usersTable, eq(withdrawalsTable.entrepreneurId, usersTable.id))
+      .where(eq(withdrawalsTable.id, id))
+      .limit(1);
+
+    if (!withdrawal) {
+      res.status(404).json({ message: "Saque não encontrado" });
+      return;
+    }
+
+    const now = new Date();
+    await db.update(withdrawalsTable).set({ status: "processed", processedAt: now }).where(eq(withdrawalsTable.id, id));
+
+    res.json({
+      ...withdrawal,
+      status: "processed",
+      requestedAt: withdrawal.requestedAt.toISOString(),
+      processedAt: now.toISOString(),
+    });
+  } catch (e) {
+    console.error("POST /admin/withdrawals/:id/process error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.get("/admin/subscriptions", (_req, res) => {
-  res.json([
-    { id: 1, entrepreneurName: "João Empreendedor", planName: "Pro", status: "active", amount: 29.90, startedAt: new Date("2025-01-25").toISOString(), nextBillingAt: new Date(Date.now() + 15 * 86400000).toISOString() },
-    { id: 2, entrepreneurName: "Ana Santos", planName: "Business", status: "active", amount: 99.90, startedAt: new Date("2025-01-30").toISOString(), nextBillingAt: new Date(Date.now() + 20 * 86400000).toISOString() },
-    { id: 3, entrepreneurName: "Carlos Oliveira", planName: "Starter", status: "trial", amount: 9.90, startedAt: new Date("2025-03-08").toISOString(), nextBillingAt: new Date(Date.now() + 3 * 86400000).toISOString() },
-    { id: 4, entrepreneurName: "Fernanda Lima", planName: "Pro", status: "overdue", amount: 29.90, startedAt: new Date("2025-02-10").toISOString(), nextBillingAt: new Date(Date.now() - 5 * 86400000).toISOString() },
-  ]);
+router.get("/admin/subscriptions", async (_req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: usersTable.id,
+        entrepreneurName: usersTable.name,
+        planName: plansTable.name,
+        status: usersTable.status,
+        amount: plansTable.price,
+        startedAt: usersTable.createdAt,
+        nextBillingAt: usersTable.trialEndsAt,
+      })
+      .from(usersTable)
+      .leftJoin(plansTable, eq(usersTable.planId, plansTable.id))
+      .where(eq(usersTable.role, "entrepreneur"));
+
+    res.json(rows.map(r => ({
+      id: r.id,
+      entrepreneurName: r.entrepreneurName,
+      planName: r.planName ?? null,
+      status: r.status,
+      amount: r.amount ?? null,
+      startedAt: r.startedAt.toISOString(),
+      nextBillingAt: r.nextBillingAt?.toISOString() ?? null,
+    })));
+  } catch (e) {
+    console.error("GET /admin/subscriptions error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;

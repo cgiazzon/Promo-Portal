@@ -1,41 +1,130 @@
 import { Router, type IRouter } from "express";
-import { CreateGroupBody, UpdateGroupBody } from "@workspace/api-zod";
+import { eq, and } from "drizzle-orm";
+import { db, groupsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const mockGroups = [
-  { id: 1, name: "Ofertas Tech & Games", niche: "Eletrônicos", connectionToken: "zapi_tk_abc123", connectionStatus: "connected", entrepreneurId: 1, createdAt: new Date("2025-02-01").toISOString(), sendCount: 234, clickCount: 1456 },
-  { id: 2, name: "Promos Casa & Decoração", niche: "Casa", connectionToken: "zapi_tk_def456", connectionStatus: "connected", entrepreneurId: 1, createdAt: new Date("2025-02-15").toISOString(), sendCount: 178, clickCount: 923 },
-  { id: 3, name: "Moda & Beleza Ofertas", niche: "Moda", connectionToken: null, connectionStatus: "disconnected", entrepreneurId: 1, createdAt: new Date("2025-03-01").toISOString(), sendCount: 45, clickCount: 234 },
-];
-
-router.get("/groups", (_req, res) => {
-  res.json(mockGroups);
+router.get("/groups", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const groups = await db
+      .select()
+      .from(groupsTable)
+      .where(eq(groupsTable.entrepreneurId, entrepreneurId));
+    res.json(groups);
+  } catch (e) {
+    console.error("GET /groups error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.post("/groups", (req, res) => {
-  const body = CreateGroupBody.parse(req.body);
-  res.status(201).json({ id: 4, ...body, connectionStatus: "disconnected", entrepreneurId: 1, createdAt: new Date().toISOString(), sendCount: 0, clickCount: 0 });
+router.post("/groups", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const { name, niche, connectionToken } = req.body as { name?: string; niche?: string; connectionToken?: string };
+    if (!name || !niche) {
+      res.status(400).json({ message: "name e niche são obrigatórios" });
+      return;
+    }
+    const [group] = await db
+      .insert(groupsTable)
+      .values({ name, niche, entrepreneurId, connectionToken: connectionToken ?? null, connectionStatus: "disconnected" })
+      .returning();
+    res.status(201).json(group);
+  } catch (e) {
+    console.error("POST /groups error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.get("/groups/:id", (req, res): void => {
-  const group = mockGroups.find(g => g.id === parseInt(req.params.id));
-  if (!group) { res.status(404).json({ message: "Grupo não encontrado" }); return; }
-  res.json(group);
+router.get("/groups/:id", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const [group] = await db
+      .select()
+      .from(groupsTable)
+      .where(and(eq(groupsTable.id, id), eq(groupsTable.entrepreneurId, entrepreneurId)))
+      .limit(1);
+    if (!group) {
+      res.status(404).json({ message: "Grupo não encontrado" });
+      return;
+    }
+    res.json(group);
+  } catch (e) {
+    console.error("GET /groups/:id error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.put("/groups/:id", (req, res) => {
-  const body = UpdateGroupBody.parse(req.body);
-  const group = mockGroups.find(g => g.id === parseInt(req.params.id));
-  res.json({ ...group, ...body });
+router.put("/groups/:id", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const { name, niche, connectionToken } = req.body as { name?: string; niche?: string; connectionToken?: string };
+    const updates: Record<string, unknown> = {};
+    if (name !== undefined) updates.name = name;
+    if (niche !== undefined) updates.niche = niche;
+    if (connectionToken !== undefined) updates.connectionToken = connectionToken;
+    const [updated] = await db
+      .update(groupsTable)
+      .set(updates)
+      .where(and(eq(groupsTable.id, id), eq(groupsTable.entrepreneurId, entrepreneurId)))
+      .returning();
+    if (!updated) {
+      res.status(404).json({ message: "Grupo não encontrado" });
+      return;
+    }
+    res.json(updated);
+  } catch (e) {
+    console.error("PUT /groups/:id error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.delete("/groups/:id", (_req, res) => {
-  res.status(204).send();
+router.delete("/groups/:id", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const [deleted] = await db
+      .delete(groupsTable)
+      .where(and(eq(groupsTable.id, id), eq(groupsTable.entrepreneurId, entrepreneurId)))
+      .returning();
+    if (!deleted) {
+      res.status(404).json({ message: "Grupo não encontrado" });
+      return;
+    }
+    res.status(204).send();
+  } catch (e) {
+    console.error("DELETE /groups/:id error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.post("/groups/:id/test-connection", (_req, res) => {
-  res.json({ connected: true, message: "Conexão estabelecida com sucesso via Z-API" });
+router.post("/groups/:id/test-connection", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const [group] = await db
+      .select()
+      .from(groupsTable)
+      .where(and(eq(groupsTable.id, id), eq(groupsTable.entrepreneurId, entrepreneurId)))
+      .limit(1);
+    if (!group) {
+      res.status(404).json({ message: "Grupo não encontrado" });
+      return;
+    }
+    const newStatus = group.connectionToken ? "connected" : "disconnected";
+    const [updated] = await db
+      .update(groupsTable)
+      .set({ connectionStatus: newStatus })
+      .where(eq(groupsTable.id, id))
+      .returning();
+    res.json({ success: newStatus === "connected", status: newStatus, group: updated });
+  } catch (e) {
+    console.error("POST /groups/:id/test-connection error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;

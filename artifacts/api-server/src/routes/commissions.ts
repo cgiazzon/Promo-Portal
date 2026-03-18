@@ -1,31 +1,62 @@
 import { Router, type IRouter } from "express";
+import { eq, and } from "drizzle-orm";
+import { db, commissionsTable, withdrawalsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const mockCommissions = [
-  { id: 1, saleAmount: 189.90, commissionPercent: 8.5, commissionAmount: 16.14, marketplaceName: "Shopee", offerTitle: "Fone Bluetooth TWS Pro 5.0", groupName: "Ofertas Tech & Games", status: "available", saleDate: new Date(Date.now() - 40 * 86400000).toISOString(), releaseDate: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: 2, saleAmount: 249.00, commissionPercent: 6.0, commissionAmount: 14.94, marketplaceName: "Amazon", offerTitle: "Echo Dot 5ª Geração", groupName: "Ofertas Tech & Games", status: "pending", saleDate: new Date(Date.now() - 10 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 25 * 86400000).toISOString() },
-  { id: 3, saleAmount: 499.90, commissionPercent: 8.5, commissionAmount: 42.49, marketplaceName: "Shopee", offerTitle: "Aspirador Robô Inteligente", groupName: "Promos Casa & Decoração", status: "available", saleDate: new Date(Date.now() - 45 * 86400000).toISOString(), releaseDate: new Date(Date.now() - 10 * 86400000).toISOString() },
-  { id: 4, saleAmount: 129.90, commissionPercent: 7.5, commissionAmount: 9.74, marketplaceName: "Mercado Livre", offerTitle: "Panela Elétrica de Arroz 5L", groupName: "Promos Casa & Decoração", status: "withdrawn", saleDate: new Date(Date.now() - 50 * 86400000).toISOString(), releaseDate: new Date(Date.now() - 15 * 86400000).toISOString() },
-  { id: 5, saleAmount: 149.90, commissionPercent: 10.0, commissionAmount: 14.99, marketplaceName: "Temu", offerTitle: "Kit 10 Camisetas Básicas", groupName: "Moda & Beleza Ofertas", status: "pending", saleDate: new Date(Date.now() - 5 * 86400000).toISOString(), releaseDate: new Date(Date.now() + 30 * 86400000).toISOString() },
-];
+router.get("/commissions", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const { status } = req.query as { status?: string };
 
-router.get("/commissions", (req, res) => {
-  let result = [...mockCommissions];
-  if (req.query.status) {
-    result = result.filter(c => c.status === req.query.status);
+    let rows = await db
+      .select()
+      .from(commissionsTable)
+      .where(eq(commissionsTable.entrepreneurId, entrepreneurId));
+
+    if (status) {
+      rows = rows.filter(c => c.status === status);
+    }
+
+    res.json(rows.map(c => ({
+      id: c.id,
+      saleAmount: c.saleAmount,
+      commissionPercent: c.commissionPercent,
+      commissionAmount: c.commissionAmount,
+      marketplaceName: c.marketplaceName,
+      offerTitle: c.offerTitle,
+      groupName: c.groupName,
+      status: c.status,
+      saleDate: c.saleDate.toISOString(),
+      releaseDate: c.releaseDate.toISOString(),
+    })));
+  } catch (e) {
+    console.error("GET /commissions error:", e);
+    res.status(500).json({ message: "Erro interno" });
   }
-  res.json(result);
 });
 
-const mockWithdrawals = [
-  { id: 1, amount: 350.00, pixKey: "123.456.789-00", pixKeyType: "cpf", status: "processed", requestedAt: new Date(Date.now() - 7 * 86400000).toISOString(), processedAt: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: 2, amount: 200.00, pixKey: "123.456.789-00", pixKeyType: "cpf", status: "processed", requestedAt: new Date(Date.now() - 20 * 86400000).toISOString(), processedAt: new Date(Date.now() - 18 * 86400000).toISOString() },
-  { id: 3, amount: 150.00, pixKey: "123.456.789-00", pixKeyType: "cpf", status: "pending", requestedAt: new Date(Date.now() - 1 * 86400000).toISOString(), processedAt: null },
-];
+router.get("/withdrawals", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const rows = await db
+      .select()
+      .from(withdrawalsTable)
+      .where(eq(withdrawalsTable.entrepreneurId, entrepreneurId));
 
-router.get("/withdrawals", (_req, res) => {
-  res.json(mockWithdrawals);
+    res.json(rows.map(w => ({
+      id: w.id,
+      amount: w.amount,
+      pixKey: w.pixKey,
+      pixKeyType: w.pixKeyType,
+      status: w.status,
+      requestedAt: w.requestedAt.toISOString(),
+      processedAt: w.processedAt?.toISOString() ?? null,
+    })));
+  } catch (e) {
+    console.error("GET /withdrawals error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;
