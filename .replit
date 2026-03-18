@@ -31,5 +31,8 @@ timeoutMs = 20000
 JWT_SECRET = "6086b0be34efb01c1d7f91b02dffe98916d28a5506dbdbe6305217b56b777750a39ef6bc7fde81c4705e209f8b9e0214"
 JWT_REFRESH_SECRET = "ba55a35d3657898ae8d1943af69dc807fcfe97659b5206db28236a7660654ff18f36242833d9686fd49a1258fc3b0326"
 
+[userenv.production]
+FRONTEND_ORIGIN = "https://keropromo.replit.app"
+
 [nix]
 channel = "stable-25_05"

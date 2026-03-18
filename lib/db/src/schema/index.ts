@@ -9,3 +9,4 @@ export * from "./plans";
 export * from "./collaborators";
 export * from "./featuredOffers";
 export * from "./refreshTokens";
+export * from "./shortLinks";
