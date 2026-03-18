@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, plansTable, usersTable } from "@workspace/db";
+import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -14,7 +15,7 @@ router.get("/plans", async (_req, res): Promise<void> => {
   }
 });
 
-router.get("/subscription", async (req, res): Promise<void> => {
+router.get("/subscription", requireAuth, async (req, res): Promise<void> => {
   try {
     const userId = req.user!.sub;
     const [user] = await db
@@ -52,7 +53,7 @@ router.get("/subscription", async (req, res): Promise<void> => {
   }
 });
 
-router.put("/subscription", async (req, res): Promise<void> => {
+router.put("/subscription", requireAuth, async (req, res): Promise<void> => {
   try {
     const userId = req.user!.sub;
     const { planId } = req.body as { planId: number };

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, marketplacesTable } from "@workspace/db";
+import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -14,7 +15,7 @@ router.get("/marketplaces", async (_req, res): Promise<void> => {
   }
 });
 
-router.post("/marketplaces", async (req, res): Promise<void> => {
+router.post("/marketplaces", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
   try {
     const { name, slug, affiliateCode, commissionPercent, color, secondaryColor, logoUrl } = req.body as {
       name: string; slug: string; affiliateCode?: string; commissionPercent: number;
@@ -31,9 +32,9 @@ router.post("/marketplaces", async (req, res): Promise<void> => {
   }
 });
 
-router.put("/marketplaces/:id", async (req, res): Promise<void> => {
+router.put("/marketplaces/:id", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const updates = req.body as Partial<typeof marketplacesTable.$inferInsert>;
     const [updated] = await db
       .update(marketplacesTable)

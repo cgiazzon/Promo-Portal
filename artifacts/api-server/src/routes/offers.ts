@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, and, or, ilike } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, offersTable, marketplacesTable } from "@workspace/db";
 import { ExtractProductDataBody } from "@workspace/api-zod";
+import { requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -114,7 +115,7 @@ router.get("/offers/:id", async (req, res): Promise<void> => {
   }
 });
 
-router.post("/offers", async (req, res): Promise<void> => {
+router.post("/offers", requireRole("admin"), async (req, res): Promise<void> => {
   try {
     const {
       title, originalPrice, finalPrice, discountPercent, couponCode, category,
@@ -152,9 +153,9 @@ router.post("/offers", async (req, res): Promise<void> => {
   }
 });
 
-router.put("/offers/:id", async (req, res): Promise<void> => {
+router.put("/offers/:id", requireRole("admin"), async (req, res): Promise<void> => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const updates = req.body as Partial<typeof offersTable.$inferInsert>;
     if (updates.expiresAt && typeof updates.expiresAt === "string") {
       updates.expiresAt = new Date(updates.expiresAt as unknown as string) as unknown as typeof updates.expiresAt;
@@ -182,9 +183,9 @@ router.put("/offers/:id", async (req, res): Promise<void> => {
   }
 });
 
-router.delete("/offers/:id", async (req, res): Promise<void> => {
+router.delete("/offers/:id", requireRole("admin"), async (req, res): Promise<void> => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [deleted] = await db
       .delete(offersTable)
       .where(eq(offersTable.id, id))

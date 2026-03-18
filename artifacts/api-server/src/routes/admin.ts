@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql, count, sum } from "drizzle-orm";
 import {
   db, usersTable, groupsTable, offersTable, sendHistoryTable,
-  walletsTable, commissionsTable, withdrawalsTable, plansTable,
+  walletsTable, commissionsTable, withdrawalsTable, plansTable, schedulesTable,
 } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -17,8 +17,9 @@ router.get("/admin/dashboard", async (_req, res): Promise<void> => {
       db.select({ total: count() }).from(groupsTable),
     ]);
 
-    const [[{ total: totalOffersSent }]] = await Promise.all([
+    const [[{ total: totalOffersSent }], [{ total: totalOffers }]] = await Promise.all([
       db.select({ total: count() }).from(sendHistoryTable),
+      db.select({ total: count() }).from(offersTable),
     ]);
 
     const [[{ total: totalClicks }]] = await Promise.all([
@@ -60,6 +61,7 @@ router.get("/admin/dashboard", async (_req, res): Promise<void> => {
     res.json({
       activeEntrepreneurs: Number(activeEntrepreneurs),
       totalGroups: Number(totalGroups),
+      totalOffers: Number(totalOffers),
       totalOffersSent: Number(totalOffersSent),
       totalClicks: Number(totalClicks ?? 0),
       mrr,
@@ -93,10 +95,11 @@ router.get("/admin/entrepreneurs", async (_req, res): Promise<void> => {
       .where(eq(usersTable.role, "entrepreneur"));
 
     const enriched = await Promise.all(entrepreneurs.map(async (e) => {
-      const [[{ groupCount }]] = await Promise.all([
+      const [[{ groupCount }], [{ scheduledCount }], [wallet]] = await Promise.all([
         db.select({ groupCount: count() }).from(groupsTable).where(eq(groupsTable.entrepreneurId, e.id)),
+        db.select({ scheduledCount: count() }).from(schedulesTable).where(eq(schedulesTable.entrepreneurId, e.id)),
+        db.select({ balance: walletsTable.availableBalance }).from(walletsTable).where(eq(walletsTable.entrepreneurId, e.id)).limit(1),
       ]);
-      const [wallet] = await db.select({ balance: walletsTable.availableBalance }).from(walletsTable).where(eq(walletsTable.entrepreneurId, e.id)).limit(1);
       return {
         id: e.id,
         name: e.name,
@@ -106,8 +109,8 @@ router.get("/admin/entrepreneurs", async (_req, res): Promise<void> => {
         planName: e.planName ?? null,
         trialEndsAt: e.trialEndsAt?.toISOString() ?? null,
         groupCount: Number(groupCount),
-        scheduledOffers: 0,
-        walletBalance: wallet?.balance ?? 0,
+        scheduledOffers: Number(scheduledCount),
+        walletBalance: (wallet as { balance?: number } | undefined)?.balance ?? 0,
         createdAt: e.createdAt.toISOString(),
       };
     }));
