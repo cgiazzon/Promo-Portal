@@ -13,6 +13,7 @@ KEROPROMO — SaaS web portal (Brazilian Portuguese) for individual entrepreneur
 - **Frontend**: React + Vite + Tailwind CSS v4
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
+- **Auth**: bcrypt (password hashing) + jsonwebtoken (JWT signing); access tokens 15min, refresh tokens 7 days stored in `refresh_tokens` table
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
