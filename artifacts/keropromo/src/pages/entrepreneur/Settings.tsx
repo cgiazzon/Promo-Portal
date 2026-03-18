@@ -1,11 +1,71 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Settings as SettingsIcon, User, CreditCard, Bell, Key, LogOut, Shield, Globe } from "lucide-react";
+import { User, CreditCard, Bell, Key, LogOut, ExternalLink, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface BillingInfo {
+  subscription: Record<string, unknown> | null;
+  subscriptionStatus: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  planId: number | null;
+}
+
+const planNames: Record<number, string> = { 1: "Starter", 2: "Pro", 3: "Business" };
+const planPrices: Record<number, string> = { 1: "9,90", 2: "29,90", 3: "99,90" };
+
+const statusLabels: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
+  trialing: { label: "Período de teste", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle },
+  active: { label: "Ativa", color: "text-green-600 bg-green-50 border-green-200", icon: CheckCircle },
+  past_due: { label: "Pagamento pendente", color: "text-orange-600 bg-orange-50 border-orange-200", icon: AlertCircle },
+  canceled: { label: "Cancelada", color: "text-red-600 bg-red-50 border-red-200", icon: AlertCircle },
+  unpaid: { label: "Não paga", color: "text-red-600 bg-red-50 border-red-200", icon: AlertCircle },
+};
 
 export default function Settings() {
   const { user, logout } = useAuth(true);
   const [activeTab, setActiveTab] = useState("profile");
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const { data: billing, isLoading: billingLoading } = useQuery<BillingInfo>({
+    queryKey: ["billing-subscription"],
+    enabled: activeTab === "billing",
+    queryFn: async () => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/billing/subscription`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch billing info");
+      return res.json() as Promise<BillingInfo>;
+    },
+  });
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/billing/portal`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to open portal");
+      const { url } = await res.json();
+      window.open(url, "_blank");
+    } catch {
+      alert("Não foi possível abrir o portal. Tente novamente.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const planId = billing?.planId ?? user?.planId;
+  const planName = planId ? (planNames[planId] ?? `Plano ${planId}`) : "Sem plano";
+  const planPrice = planId ? (planPrices[planId] ?? "—") : null;
+  const subStatus = billing?.subscriptionStatus ?? user?.subscriptionStatus ?? "trialing";
+  const statusInfo = statusLabels[subStatus] ?? { label: subStatus, color: "text-muted-foreground bg-muted border-border", icon: CheckCircle };
 
   const tabs = [
     { key: "profile", label: "Perfil", icon: User },
@@ -62,31 +122,85 @@ export default function Settings() {
 
         {activeTab === "billing" && (
           <div className="space-y-4">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Plano Atual</h3>
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-bold text-foreground">Plano Pro</p>
-                  <p className="text-sm text-muted-foreground">3 grupos · 150 envios/mes · 2 colaboradores</p>
+            {billingLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Plano Atual</h3>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}>
+                      <statusInfo.icon className="w-3.5 h-3.5" />
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{planName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {subStatus === "trialing" ? "10 dias de teste grátis" : "Assinatura ativa"}
+                      </p>
+                    </div>
+                    {planPrice && (
+                      <p className="text-2xl font-bold text-primary">
+                        R$ {planPrice}
+                        <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {(subStatus === "past_due" || subStatus === "unpaid") && (
+                    <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-800">
+                      Há um problema com seu pagamento. Acesse o portal para regularizar sua assinatura e evitar a suspensão.
+                    </div>
+                  )}
+                  {subStatus === "canceled" && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800">
+                      Sua assinatura foi cancelada. Reative para continuar usando a plataforma.
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 mt-4">
+                    {billing?.stripeCustomerId ? (
+                      <button
+                        onClick={openPortal}
+                        disabled={portalLoading}
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-semibold hover:opacity-90 disabled:opacity-60"
+                      >
+                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                        Gerenciar Assinatura
+                      </button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhuma assinatura Stripe vinculada.</p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-2xl font-bold text-primary">R$ 29,90<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-              </div>
-              <div className="flex gap-3 mt-4">
-                <button className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-semibold hover:opacity-90">Fazer Upgrade</button>
-                <button className="px-6 py-2.5 rounded-xl font-semibold text-destructive border border-destructive/30 hover:bg-destructive/5">Cancelar Assinatura</button>
-              </div>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Metodo de Pagamento</h3>
-              <div className="flex items-center gap-3 bg-muted/30 rounded-xl p-4">
-                <CreditCard className="w-8 h-8 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-foreground">Cartao **** **** **** 4242</p>
-                  <p className="text-sm text-muted-foreground">Expira em 12/2027</p>
+
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-3">Método de Pagamento</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Gerencie seu cartão, histórico de faturas e informações de cobrança diretamente no portal seguro.
+                  </p>
+                  {billing?.stripeCustomerId ? (
+                    <button
+                      onClick={openPortal}
+                      disabled={portalLoading}
+                      className="flex items-center gap-2 text-sm text-primary font-medium hover:underline disabled:opacity-60"
+                    >
+                      {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />}
+                      Abrir portal de faturamento
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 bg-muted/30 rounded-xl p-4">
+                      <CreditCard className="w-6 h-6 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Nenhum cartão cadastrado ainda.</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <button className="mt-3 text-sm text-primary font-medium hover:underline">Alterar cartao</button>
-            </div>
+              </>
+            )}
           </div>
         )}
 
