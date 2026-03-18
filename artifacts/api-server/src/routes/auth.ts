@@ -142,7 +142,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET!) as AuthPayload;
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as AuthPayload;
     const [user] = await db
       .select()
       .from(usersTable)
@@ -168,7 +168,7 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
   }
 
   try {
-    const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET!) as { sub: number };
+    const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET!) as unknown as { sub: number };
     const tokenHash = hashToken(refreshToken);
 
     const [stored] = await db
@@ -220,7 +220,7 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 export function verifyAccessToken(token: string): AuthPayload {
-  return jwt.verify(token, JWT_SECRET!) as AuthPayload;
+  return jwt.verify(token, JWT_SECRET!) as unknown as AuthPayload;
 }
 
 export default router;

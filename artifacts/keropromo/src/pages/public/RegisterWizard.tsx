@@ -30,6 +30,9 @@ export default function RegisterWizard() {
       if (res.token) {
         localStorage.setItem("auth_token", res.token);
       }
+      if (res.refreshToken) {
+        localStorage.setItem("refresh_token", res.refreshToken);
+      }
       setStep(4);
     } catch (e: unknown) {
       toast({
