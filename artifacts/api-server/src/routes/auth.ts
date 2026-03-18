@@ -2,10 +2,11 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, usersTable, refreshTokensTable, walletsTable } from "@workspace/db";
 import { LoginBody, RegisterBody } from "@workspace/api-zod";
 import type { User } from "@workspace/db";
+import { getUncachableStripeClient } from "../stripeClient";
 
 const router: IRouter = Router();
 
@@ -53,6 +54,8 @@ function safeUserResponse(user: User) {
     role: user.role,
     planId: user.planId,
     status: user.status,
+    subscriptionStatus: user.subscriptionStatus,
+    stripeCustomerId: user.stripeCustomerId ?? null,
     trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
   };
@@ -128,6 +131,61 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       pendingBalance: 0,
       totalWithdrawn: 0,
     });
+
+    let stripeCustomerId: string | undefined;
+    let stripeSubscriptionId: string | undefined;
+    let stripePriceId: string | undefined;
+
+    try {
+      const stripe = await getUncachableStripeClient();
+
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name,
+        phone: user.phone ?? undefined,
+        metadata: { userId: String(user.id) },
+      });
+      stripeCustomerId = customer.id;
+
+      const planPriceMap: Record<number, string> = await (async () => {
+        const pricesResult = await db.execute(
+          sql`SELECT p.id, p.metadata->>'planId' as plan_id FROM stripe.prices p WHERE p.active = true`
+        );
+        const map: Record<number, string> = {};
+        for (const row of pricesResult.rows as any[]) {
+          if (row.plan_id) map[Number(row.plan_id)] = row.id;
+        }
+        return map;
+      })();
+
+      const resolvedPriceId = body.planId ? planPriceMap[body.planId] : undefined;
+      stripePriceId = resolvedPriceId;
+
+      if (resolvedPriceId) {
+        const subscription = await stripe.subscriptions.create({
+          customer: stripeCustomerId,
+          items: [{ price: resolvedPriceId }],
+          trial_period_days: 10,
+          payment_behavior: "default_incomplete",
+          payment_settings: { save_default_payment_method: "on_subscription" },
+          expand: ["latest_invoice.payment_intent"],
+        });
+        stripeSubscriptionId = subscription.id;
+      }
+
+      await db
+        .update(usersTable)
+        .set({
+          stripeCustomerId,
+          stripeSubscriptionId: stripeSubscriptionId ?? null,
+          stripePriceId: stripePriceId ?? null,
+          subscriptionStatus: "trialing",
+        })
+        .where(eq(usersTable.id, user.id));
+    } catch (stripeErr: unknown) {
+      const msg = stripeErr instanceof Error ? stripeErr.message : String(stripeErr);
+      console.error("Stripe setup error (non-fatal):", msg);
+    }
 
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user.id);
