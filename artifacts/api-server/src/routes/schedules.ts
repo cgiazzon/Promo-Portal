@@ -4,7 +4,10 @@ import { db, schedulesTable, offersTable, groupsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-async function enrichSchedule(schedule: typeof schedulesTable.$inferSelect) {
+async function enrichSchedule(
+  schedule: typeof schedulesTable.$inferSelect,
+  entrepreneurId: number
+) {
   const groupIds: number[] = JSON.parse(schedule.groupIds);
 
   const [offer] = await db
@@ -18,7 +21,12 @@ async function enrichSchedule(schedule: typeof schedulesTable.$inferSelect) {
     const groups = await db
       .select({ id: groupsTable.id, name: groupsTable.name })
       .from(groupsTable)
-      .where(inArray(groupsTable.id, groupIds));
+      .where(
+        and(
+          inArray(groupsTable.id, groupIds),
+          eq(groupsTable.entrepreneurId, entrepreneurId)
+        )
+      );
     groupNames = groupIds.map(id => groups.find(g => g.id === id)?.name ?? String(id));
   }
 
@@ -43,7 +51,7 @@ router.get("/schedules", async (req, res): Promise<void> => {
       .from(schedulesTable)
       .where(eq(schedulesTable.entrepreneurId, entrepreneurId));
 
-    const enriched = await Promise.all(schedules.map(enrichSchedule));
+    const enriched = await Promise.all(schedules.map(s => enrichSchedule(s, entrepreneurId)));
     res.json(enriched);
   } catch (e) {
     console.error("GET /schedules error:", e);
@@ -58,19 +66,35 @@ router.post("/schedules", async (req, res): Promise<void> => {
       offerId: number; groupIds: number[]; scheduledAt: string; shortUrl?: string;
     };
 
+    if (groupIds && groupIds.length > 0) {
+      const ownedGroups = await db
+        .select({ id: groupsTable.id })
+        .from(groupsTable)
+        .where(
+          and(
+            inArray(groupsTable.id, groupIds),
+            eq(groupsTable.entrepreneurId, entrepreneurId)
+          )
+        );
+      if (ownedGroups.length !== groupIds.length) {
+        res.status(403).json({ message: "Um ou mais grupos não pertencem a você" });
+        return;
+      }
+    }
+
     const [schedule] = await db
       .insert(schedulesTable)
       .values({
         offerId,
         entrepreneurId,
-        groupIds: JSON.stringify(groupIds),
+        groupIds: JSON.stringify(groupIds ?? []),
         scheduledAt: new Date(scheduledAt),
         status: "pending",
         shortUrl: shortUrl ?? null,
       })
       .returning();
 
-    const enriched = await enrichSchedule(schedule);
+    const enriched = await enrichSchedule(schedule, entrepreneurId);
     res.status(201).json(enriched);
   } catch (e) {
     console.error("POST /schedules error:", e);
@@ -85,6 +109,22 @@ router.put("/schedules/:id", async (req, res): Promise<void> => {
     const { offerId, groupIds, scheduledAt, status, shortUrl } = req.body as {
       offerId?: number; groupIds?: number[]; scheduledAt?: string; status?: string; shortUrl?: string;
     };
+
+    if (groupIds && groupIds.length > 0) {
+      const ownedGroups = await db
+        .select({ id: groupsTable.id })
+        .from(groupsTable)
+        .where(
+          and(
+            inArray(groupsTable.id, groupIds),
+            eq(groupsTable.entrepreneurId, entrepreneurId)
+          )
+        );
+      if (ownedGroups.length !== groupIds.length) {
+        res.status(403).json({ message: "Um ou mais grupos não pertencem a você" });
+        return;
+      }
+    }
 
     const updates: Record<string, unknown> = {};
     if (offerId !== undefined) updates.offerId = offerId;
@@ -104,7 +144,7 @@ router.put("/schedules/:id", async (req, res): Promise<void> => {
       return;
     }
 
-    const enriched = await enrichSchedule(updated);
+    const enriched = await enrichSchedule(updated, entrepreneurId);
     res.json(enriched);
   } catch (e) {
     console.error("PUT /schedules/:id error:", e);
