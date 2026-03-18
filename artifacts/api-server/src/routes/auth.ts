@@ -122,7 +122,12 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       })
       .returning();
 
-    await db.insert(walletsTable).values({ entrepreneurId: user.id }).catch(() => {});
+    await db.insert(walletsTable).values({
+      entrepreneurId: user.id,
+      availableBalance: 0,
+      pendingBalance: 0,
+      totalWithdrawn: 0,
+    });
 
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user.id);
@@ -130,7 +135,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
     res.status(201).json({ token: accessToken, refreshToken, user: safeUserResponse(user) });
   } catch (e: unknown) {
-    console.error("Register error:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Register error:", msg);
     res.status(400).json({ message: "Dados inválidos" });
   }
 });
