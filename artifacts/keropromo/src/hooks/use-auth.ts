@@ -35,8 +35,8 @@ export function useAuth(requireAuth: boolean = false, requireRole?: string) {
     if (res.token) {
       localStorage.setItem("auth_token", res.token);
     }
-    if ((res as unknown as { refreshToken?: string }).refreshToken) {
-      localStorage.setItem("refresh_token", (res as unknown as { refreshToken: string }).refreshToken);
+    if (res.refreshToken) {
+      localStorage.setItem("refresh_token", res.refreshToken);
     }
     queryClient.setQueryData(["/api/auth/me"], res.user);
 

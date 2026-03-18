@@ -5,10 +5,8 @@
  * KEROPROMO API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { User } from "./user";
 
-export interface AuthResponse {
+export interface RefreshResponse {
   token: string;
   refreshToken: string;
-  user: User;
 }

@@ -53,7 +53,17 @@ export interface User {
 
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
   user: User;
+}
+
+export interface RefreshRequest {
+  refreshToken: string;
+}
+
+export interface RefreshResponse {
+  token: string;
+  refreshToken: string;
 }
 
 export interface Marketplace {

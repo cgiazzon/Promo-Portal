@@ -24,6 +24,7 @@ export const LoginBody = zod.object({
 
 export const LoginResponse = zod.object({
   token: zod.string(),
+  refreshToken: zod.string(),
   user: zod.object({
     id: zod.number(),
     name: zod.string(),
@@ -46,6 +47,18 @@ export const RegisterBody = zod.object({
   password: zod.string(),
   phone: zod.string(),
   planId: zod.number(),
+});
+
+/**
+ * @summary Refresh access token
+ */
+export const RefreshTokenBody = zod.object({
+  refreshToken: zod.string(),
+});
+
+export const RefreshTokenResponse = zod.object({
+  token: zod.string(),
+  refreshToken: zod.string(),
 });
 
 /**
