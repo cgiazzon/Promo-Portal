@@ -1,43 +1,84 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
+import { db, featuredOffersTable, offersTable, marketplacesTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-router.get("/featured-offer", (_req, res) => {
-  res.json({
-    id: 1,
-    offerId: 3,
-    offer: {
-      id: 3,
-      title: "Echo Dot 5ª Geração Smart Speaker com Alexa",
-      originalPrice: 399.00,
-      finalPrice: 249.00,
-      discountPercent: 38,
-      couponCode: "ALEXA15",
-      category: "Eletrônicos",
-      imageUrl: "https://placehold.co/400x400/FF9900/white?text=Echo+Dot",
-      productUrl: "https://amazon.com.br/product/3",
-      marketplaceId: 3,
-      marketplaceName: "Amazon",
-      marketplaceColor: "#FF9900",
-      status: "active",
-      expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
-      createdAt: new Date().toISOString(),
-      sendCount: 210,
-      clickCount: 1340,
-    },
-    motivationalMessage: "A oferta mais clicada da semana! Envie agora para seus grupos e aumente suas comissões!",
-    setAt: new Date().toISOString(),
-  });
+async function getFeaturedWithOffer() {
+  const [featured] = await db.select().from(featuredOffersTable).limit(1);
+  if (!featured) return null;
+
+  const [offer] = await db
+    .select({
+      id: offersTable.id,
+      title: offersTable.title,
+      originalPrice: offersTable.originalPrice,
+      finalPrice: offersTable.finalPrice,
+      discountPercent: offersTable.discountPercent,
+      couponCode: offersTable.couponCode,
+      category: offersTable.category,
+      imageUrl: offersTable.imageUrl,
+      productUrl: offersTable.productUrl,
+      marketplaceId: offersTable.marketplaceId,
+      status: offersTable.status,
+      expiresAt: offersTable.expiresAt,
+      sendCount: offersTable.sendCount,
+      clickCount: offersTable.clickCount,
+      createdAt: offersTable.createdAt,
+      marketplaceName: marketplacesTable.name,
+      marketplaceColor: marketplacesTable.color,
+    })
+    .from(offersTable)
+    .leftJoin(marketplacesTable, eq(offersTable.marketplaceId, marketplacesTable.id))
+    .where(eq(offersTable.id, featured.offerId))
+    .limit(1);
+
+  return {
+    id: featured.id,
+    offerId: featured.offerId,
+    offer: offer ?? null,
+    motivationalMessage: featured.motivationalMessage,
+    setAt: featured.setAt.toISOString(),
+  };
+}
+
+router.get("/featured-offer", async (_req, res): Promise<void> => {
+  try {
+    const result = await getFeaturedWithOffer();
+    if (!result) {
+      res.status(404).json({ message: "Nenhuma oferta em destaque configurada" });
+      return;
+    }
+    res.json(result);
+  } catch (e) {
+    console.error("GET /featured-offer error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.put("/featured-offer", (req, res) => {
-  res.json({
-    id: 1,
-    offerId: req.body.offerId,
-    offer: { id: req.body.offerId, title: "Oferta Destaque Atualizada", originalPrice: 299.90, finalPrice: 149.90, discountPercent: 50, status: "active", marketplaceId: 1, marketplaceName: "Shopee", marketplaceColor: "#EE4D2D" },
-    motivationalMessage: req.body.motivationalMessage || "",
-    setAt: new Date().toISOString(),
-  });
+router.put("/featured-offer", async (req, res): Promise<void> => {
+  try {
+    const { offerId, motivationalMessage } = req.body as { offerId: number; motivationalMessage?: string };
+
+    const [existing] = await db.select().from(featuredOffersTable).limit(1);
+    if (existing) {
+      await db
+        .update(featuredOffersTable)
+        .set({ offerId, motivationalMessage: motivationalMessage ?? null, setAt: new Date() })
+        .where(eq(featuredOffersTable.id, existing.id));
+    } else {
+      await db.insert(featuredOffersTable).values({
+        offerId,
+        motivationalMessage: motivationalMessage ?? null,
+      });
+    }
+
+    const result = await getFeaturedWithOffer();
+    res.json(result);
+  } catch (e) {
+    console.error("PUT /featured-offer error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;

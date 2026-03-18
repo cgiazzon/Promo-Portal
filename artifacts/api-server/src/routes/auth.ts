@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
-import { db, usersTable, refreshTokensTable } from "@workspace/db";
+import { db, usersTable, refreshTokensTable, walletsTable } from "@workspace/db";
 import { LoginBody, RegisterBody } from "@workspace/api-zod";
 import type { User } from "@workspace/db";
 
@@ -121,6 +121,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
         trialEndsAt,
       })
       .returning();
+
+    await db.insert(walletsTable).values({ entrepreneurId: user.id }).catch(() => {});
 
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user.id);

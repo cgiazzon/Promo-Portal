@@ -1,32 +1,134 @@
 import { Router, type IRouter } from "express";
-import { CreateScheduleBody, UpdateScheduleBody } from "@workspace/api-zod";
+import { eq, and, inArray } from "drizzle-orm";
+import { db, schedulesTable, offersTable, groupsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const mockSchedules = [
-  { id: 1, offerId: 1, offerTitle: "Fone Bluetooth TWS Pro 5.0", groupIds: [1, 2], groupNames: ["Ofertas Tech & Games", "Promos Casa & Decoração"], scheduledAt: new Date(Date.now() + 3600000).toISOString(), status: "pending", shortUrl: "https://pgp.link/abc123", createdAt: new Date().toISOString() },
-  { id: 2, offerId: 3, offerTitle: "Echo Dot 5ª Geração Smart Speaker", groupIds: [1], groupNames: ["Ofertas Tech & Games"], scheduledAt: new Date(Date.now() + 7200000).toISOString(), status: "pending", shortUrl: "https://pgp.link/def456", createdAt: new Date().toISOString() },
-  { id: 3, offerId: 5, offerTitle: "Aspirador Robô Inteligente", groupIds: [2], groupNames: ["Promos Casa & Decoração"], scheduledAt: new Date(Date.now() + 86400000).toISOString(), status: "pending", shortUrl: "https://pgp.link/ghi789", createdAt: new Date().toISOString() },
-  { id: 4, offerId: 2, offerTitle: "Kit 10 Camisetas Básicas", groupIds: [3], groupNames: ["Moda & Beleza Ofertas"], scheduledAt: new Date(Date.now() - 3600000).toISOString(), status: "sent", shortUrl: "https://pgp.link/jkl012", createdAt: new Date(Date.now() - 7200000).toISOString() },
-];
+async function enrichSchedule(schedule: typeof schedulesTable.$inferSelect) {
+  const groupIds: number[] = JSON.parse(schedule.groupIds);
 
-router.get("/schedules", (_req, res) => {
-  res.json(mockSchedules);
+  const [offer] = await db
+    .select({ title: offersTable.title })
+    .from(offersTable)
+    .where(eq(offersTable.id, schedule.offerId))
+    .limit(1);
+
+  let groupNames: string[] = [];
+  if (groupIds.length > 0) {
+    const groups = await db
+      .select({ id: groupsTable.id, name: groupsTable.name })
+      .from(groupsTable)
+      .where(inArray(groupsTable.id, groupIds));
+    groupNames = groupIds.map(id => groups.find(g => g.id === id)?.name ?? String(id));
+  }
+
+  return {
+    id: schedule.id,
+    offerId: schedule.offerId,
+    offerTitle: offer?.title ?? null,
+    groupIds,
+    groupNames,
+    scheduledAt: schedule.scheduledAt.toISOString(),
+    status: schedule.status,
+    shortUrl: schedule.shortUrl ?? null,
+    createdAt: schedule.createdAt.toISOString(),
+  };
+}
+
+router.get("/schedules", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const schedules = await db
+      .select()
+      .from(schedulesTable)
+      .where(eq(schedulesTable.entrepreneurId, entrepreneurId));
+
+    const enriched = await Promise.all(schedules.map(enrichSchedule));
+    res.json(enriched);
+  } catch (e) {
+    console.error("GET /schedules error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.post("/schedules", (req, res) => {
-  const body = CreateScheduleBody.parse(req.body);
-  res.status(201).json({ id: 5, ...body, offerTitle: "Nova Oferta Agendada", groupNames: ["Grupo 1"], status: "pending", shortUrl: "https://pgp.link/" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString() });
+router.post("/schedules", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const { offerId, groupIds, scheduledAt, shortUrl } = req.body as {
+      offerId: number; groupIds: number[]; scheduledAt: string; shortUrl?: string;
+    };
+
+    const [schedule] = await db
+      .insert(schedulesTable)
+      .values({
+        offerId,
+        entrepreneurId,
+        groupIds: JSON.stringify(groupIds),
+        scheduledAt: new Date(scheduledAt),
+        status: "pending",
+        shortUrl: shortUrl ?? null,
+      })
+      .returning();
+
+    const enriched = await enrichSchedule(schedule);
+    res.status(201).json(enriched);
+  } catch (e) {
+    console.error("POST /schedules error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.put("/schedules/:id", (req, res) => {
-  const body = UpdateScheduleBody.parse(req.body);
-  const sched = mockSchedules.find(s => s.id === parseInt(req.params.id));
-  res.json({ ...sched, ...body });
+router.put("/schedules/:id", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const { offerId, groupIds, scheduledAt, status, shortUrl } = req.body as {
+      offerId?: number; groupIds?: number[]; scheduledAt?: string; status?: string; shortUrl?: string;
+    };
+
+    const updates: Record<string, unknown> = {};
+    if (offerId !== undefined) updates.offerId = offerId;
+    if (groupIds !== undefined) updates.groupIds = JSON.stringify(groupIds);
+    if (scheduledAt !== undefined) updates.scheduledAt = new Date(scheduledAt);
+    if (status !== undefined) updates.status = status;
+    if (shortUrl !== undefined) updates.shortUrl = shortUrl;
+
+    const [updated] = await db
+      .update(schedulesTable)
+      .set(updates)
+      .where(and(eq(schedulesTable.id, id), eq(schedulesTable.entrepreneurId, entrepreneurId)))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ message: "Agendamento não encontrado" });
+      return;
+    }
+
+    const enriched = await enrichSchedule(updated);
+    res.json(enriched);
+  } catch (e) {
+    console.error("PUT /schedules/:id error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
-router.delete("/schedules/:id", (_req, res) => {
-  res.status(204).send();
+router.delete("/schedules/:id", async (req, res): Promise<void> => {
+  try {
+    const entrepreneurId = req.user!.sub;
+    const id = parseInt(req.params.id);
+    const [deleted] = await db
+      .delete(schedulesTable)
+      .where(and(eq(schedulesTable.id, id), eq(schedulesTable.entrepreneurId, entrepreneurId)))
+      .returning();
+    if (!deleted) {
+      res.status(404).json({ message: "Agendamento não encontrado" });
+      return;
+    }
+    res.status(204).send();
+  } catch (e) {
+    console.error("DELETE /schedules/:id error:", e);
+    res.status(500).json({ message: "Erro interno" });
+  }
 });
 
 export default router;
