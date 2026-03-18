@@ -19,8 +19,6 @@ function resolveMethod(input: RequestInfo | URL, explicitMethod?: string): strin
   return "GET";
 }
 
-// Use loose check for URL — some runtimes (e.g. React Native) polyfill URL
-// differently, so `instanceof URL` can fail.
 function isUrl(input: RequestInfo | URL): input is URL {
   return typeof URL !== "undefined" && input instanceof URL;
 }
@@ -64,8 +62,6 @@ function isTextMediaType(mediaType: string | null): boolean {
   );
 }
 
-// Loose equality (`== null`) handles both `null` (browser) and `undefined`
-// (React Native, which doesn't implement ReadableStream body).
 function hasNoBody(response: Response, method: string): boolean {
   if (method === "HEAD") return true;
   if (NO_BODY_STATUS.has(response.status)) return true;
@@ -207,7 +203,6 @@ async function parseErrorBody(response: Response, method: string): Promise<unkno
 
   const mediaType = getMediaType(response.headers);
 
-  // Fall back to text when blob() is unavailable (e.g. some React Native builds).
   if (mediaType && !isJsonMediaType(mediaType) && !isTextMediaType(mediaType)) {
     return typeof response.blob === "function" ? response.blob() : response.text();
   }
@@ -280,6 +275,44 @@ function getStoredAuthToken(): string | null {
   }
 }
 
+function getStoredRefreshToken(): string | null {
+  if (typeof globalThis.localStorage === "undefined") return null;
+  try {
+    return globalThis.localStorage.getItem("refresh_token");
+  } catch {
+    return null;
+  }
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function attemptTokenRefresh(): Promise<string | null> {
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      globalThis.localStorage?.removeItem("auth_token");
+      globalThis.localStorage?.removeItem("refresh_token");
+      return null;
+    }
+
+    const data = (await response.json()) as { token: string; refreshToken: string };
+    globalThis.localStorage?.setItem("auth_token", data.token);
+    globalThis.localStorage?.setItem("refresh_token", data.refreshToken);
+    return data.token;
+  } catch {
+    return null;
+  }
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -292,28 +325,47 @@ export async function customFetch<T = unknown>(
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
   }
 
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const url = resolveUrl(input);
 
-  const token = getStoredAuthToken();
-  if (token && !headers.has("authorization")) {
-    headers.set("authorization", `Bearer ${token}`);
+  const makeRequest = async (accessToken: string | null): Promise<Response> => {
+    const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+    if (accessToken && !headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${accessToken}`);
+    }
+
+    if (
+      typeof init.body === "string" &&
+      !headers.has("content-type") &&
+      looksLikeJson(init.body)
+    ) {
+      headers.set("content-type", "application/json");
+    }
+
+    if (responseType === "json" && !headers.has("accept")) {
+      headers.set("accept", DEFAULT_JSON_ACCEPT);
+    }
+
+    return fetch(input, { ...init, method, headers });
+  };
+
+  const requestInfo = { method, url };
+  let response = await makeRequest(getStoredAuthToken());
+
+  if (response.status === 401 && !url.includes("/api/auth/")) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = attemptTokenRefresh().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+
+    const newToken = await refreshPromise;
+    if (newToken) {
+      response = await makeRequest(newToken);
+    }
   }
-
-  if (
-    typeof init.body === "string" &&
-    !headers.has("content-type") &&
-    looksLikeJson(init.body)
-  ) {
-    headers.set("content-type", "application/json");
-  }
-
-  if (responseType === "json" && !headers.has("accept")) {
-    headers.set("accept", DEFAULT_JSON_ACCEPT);
-  }
-
-  const requestInfo = { method, url: resolveUrl(input) };
-
-  const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
