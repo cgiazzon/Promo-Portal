@@ -24,6 +24,7 @@ KEROPROMO — SaaS web portal (Brazilian Portuguese) for individual entrepreneur
 - **Charts**: Recharts
 - **Forms**: react-hook-form
 - **Brand Color**: #25D366 (WhatsApp green)
+- **Payments**: Stripe (via Replit native connector — `connection:conn_stripe_01KM1F8JM5T7T2VEK0QR62XD9W`)
 
 ## Structure
 
@@ -37,7 +38,7 @@ artifacts-monorepo/
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts
+├── scripts/                # Utility scripts (seed-admin, seed-dev, seed-products)
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
 ├── tsconfig.json
@@ -66,25 +67,55 @@ artifacts-monorepo/
 
 ## API Server (artifacts/api-server)
 
-All routes under `/api` prefix. Mock data for demo purposes.
+All routes under `/api` prefix.
 
 ### Routes
-- `auth.ts` — login, register, getMe, logout (token-based sessions via Bearer header; mock users by role based on email)
-- `offers.ts` — CRUD offers with 8 mock products across 4 marketplaces
+- `auth.ts` — login, register, getMe, logout; on register: creates Stripe customer + subscription with 10-day trial
+- `offers.ts` — CRUD offers
 - `groups.ts` — WhatsApp groups (name, niche, token only — no contacts stored)
 - `schedules.ts` — scheduled sends
 - `sendHistory.ts` — send history records
 - `wallet.ts` — digital wallet with Pix withdrawals
 - `commissions.ts` — affiliate commissions
 - `collaborators.ts` — collaborator management
-- `plans.ts` — subscription plans (Starter R$9.90, Pro R$29.90, Business R$99.90)
+- `plans.ts` — subscription plans (Starter R$9.90, Pro R$29.90, Business R$99.90); GET /subscription, PUT /subscription
+- `billing.ts` — Stripe billing: GET /billing/stripe-key (public), GET /billing/subscription, POST /billing/portal (Customer Portal), POST /billing/setup-intent
 - `featured.ts` — featured offer of the week
 - `admin.ts` — admin dashboard metrics
 - `entrepreneur.ts` — entrepreneur dashboard/metrics/financial
+- `shortLinks.ts` — short URL generation + public redirect at /s/:code
+
+### Stripe Integration
+- Uses Replit native connector (`stripe` connector) — credentials fetched dynamically via `stripeClient.ts`
+- `stripeClient.ts` — `getUncachableStripeClient()`, `getStripePublishableKey()`, `getStripeSync()`
+- `webhookHandlers.ts` — processes Stripe webhooks via `stripe-replit-sync`
+- Webhook endpoint: `POST /api/stripe/webhook` (registered BEFORE express.json() with express.raw())
+- Stripe schema synced into `stripe.*` PostgreSQL schema via `stripe-replit-sync`
+- Stripe products in account: KERO PROMO Starter (`prod_UAnmdPgYaPkYHI`), Pro (`prod_UAnm1TJXv1RKoo`), Business (`prod_UAnmuVv4cGgmr8`)
+- Prices (BRL, recurring monthly) have `planId` metadata (1/2/3) for mapping to DB plans
+- `scripts/src/seed-products.ts` — creates/idempotently updates Stripe products+prices
+- `requireActiveSubscription` middleware in `middlewares/subscription.ts` — blocks canceled/past_due/unpaid with 402
+
+### Middlewares
+- `auth.ts` — `requireAuth` (JWT Bearer), `requireRole(role)`
+- `subscription.ts` — `requireActiveSubscription` (checks subscriptionStatus)
+
+### Startup (index.ts)
+- Server starts immediately (non-blocking)
+- `initStripe()` runs async in background: runMigrations → getStripeSync → findOrCreateManagedWebhook → syncBackfill
 
 ## Database Schema (lib/db)
 
-Tables: users, marketplaces, offers, groups, schedules, send_history, wallets, commissions, withdrawals, plans, collaborators, featured_offers
+Tables: users, marketplaces, offers, groups, schedules, send_history, wallets, commissions, withdrawals, plans, collaborators, featured_offers, refresh_tokens, short_links
+
+### users table fields (key)
+- `subscription_status` text default "trialing"
+- `stripe_customer_id` text
+- `stripe_subscription_id` text
+- `stripe_price_id` text
+- `plan_id` integer (FK to plans)
+- `status` text default "trial"
+- `trial_ends_at` timestamp
 
 ## TypeScript & Composite Projects
 
@@ -104,9 +135,16 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - All UI text is in Brazilian Portuguese (pt-BR)
 - KEROPROMO does NOT store WhatsApp contacts/members — only group name, niche, and connection token
 - WhatsApp integration (Z-API/Evolution API) is mocked/placeholder
-- Stripe payments are mocked/placeholder
 - Marketplace APIs are mocked with realistic sample data
 - Plans: Starter (1 group, 30 sends/mo), Pro (3 groups, 150 sends/mo, 2 collab), Business (unlimited)
 - 3 user roles: admin, entrepreneur, collaborator
 - Pix withdrawals are manually processed by the KEROPROMO team
 - Commission confirmation takes ~35 days from marketplace
+- Stripe integration uses Replit native connector (NOT manual env vars); connector ID: `connection:conn_stripe_01KM1F8JM5T7T2VEK0QR62XD9W`
+- Stripe Customer Portal requires activation at: https://dashboard.stripe.com/test/settings/billing/portal
+
+## Admin Credentials
+- Email: `eduardo@oversaas.net` / Password: `123456@7`
+
+## Pending Configuration
+- Stripe Customer Portal must be activated at dashboard.stripe.com/test/settings/billing/portal before the "Gerenciar Assinatura" button works
