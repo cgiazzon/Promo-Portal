@@ -7,18 +7,45 @@ export default function CrawlerDashboard() {
   const [logs, setLogs] = useState<{time: string, msg: string, type: 'info'|'warning'|'error'|'success'}[]>([]);
 
   // Novos estados funcionais
-  type SearchFilter = { term: string, limit: number, minPrice?: string, maxPrice?: string };
+  type SearchFilter = { term: string, limit: number, minPrice?: string, maxPrice?: string, state?: string, city?: string };
   const [terms, setTerms] = useState<SearchFilter[]>([
-    { term: "iphone 13 pro", limit: 15, minPrice: "2000", maxPrice: "4000" },
-    { term: "fritadeira airfryer", limit: 30, maxPrice: "350" }
+    { term: "iphone 13 pro", limit: 15, minPrice: "2500", maxPrice: "4000" },
+    { term: "fritadeira airfryer", limit: 30, maxPrice: "350", state: "SP" }
   ]);
   const [newTerm, setNewTerm] = useState("");
   const [newLimit, setNewLimit] = useState(20);
   const [newMin, setNewMin] = useState("");
   const [newMax, setNewMax] = useState("");
   
+  // Localidades (IBGE/Correios Integration)
+  const [states, setStates] = useState<{sigla: string, nome: string}[]>([]);
+  const [cities, setCities] = useState<{nome: string}[]>([]);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [isFormExpanded, setIsFormExpanded] = useState(false);
+  
   // Fila Pronta pro Modulo de Disparo/Grupos
   const [capturedOffers, setCapturedOffers] = useState<{id: string, term: string, price: string, link: string, thumbnail?: string}[]>([]);
+
+  // Fetch Estados
+  useEffect(() => {
+    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
+      .then(res => res.json())
+      .then(data => setStates(data))
+      .catch(console.error);
+  }, []);
+
+  // Fetch Municipios baseado no Estado
+  useEffect(() => {
+    if (selectedState) {
+      fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`)
+        .then(res => res.json())
+        .then(data => setCities(data))
+        .catch(console.error);
+    } else {
+      setCities([]);
+    }
+  }, [selectedState]);
 
   const handleAddTerm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +54,16 @@ export default function CrawlerDashboard() {
         term: newTerm.trim(), 
         limit: newLimit, 
         minPrice: newMin || undefined, 
-        maxPrice: newMax || undefined 
+        maxPrice: newMax || undefined,
+        state: selectedState || undefined,
+        city: selectedCity || undefined
       }]);
       setNewTerm("");
       setNewMin("");
       setNewMax("");
+      setSelectedState("");
+      setSelectedCity("");
+      setIsFormExpanded(false);
     }
   };
 
@@ -63,7 +95,9 @@ export default function CrawlerDashboard() {
         const minP = config.minPrice ? config.minPrice : "*";
         const maxP = config.maxPrice ? config.maxPrice : "*";
         const priceFilter = (config.minPrice || config.maxPrice) ? `&price=${minP}-${maxP}` : "";
-        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}&sort=price_asc${priceFilter}`;
+        // Emulando a injeção do State code no search string pro ML (se filtrado)
+        const locationQuery = config.state ? ` ${config.city ? config.city + ' ' : ''}${config.state}` : '';
+        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term + locationQuery)}&limit=${config.limit || 15}&sort=price_asc${priceFilter}`;
 
         fetch(url)
           .then(res => res.json())
@@ -212,69 +246,115 @@ export default function CrawlerDashboard() {
                   </div>
 
                   {/* Controle de Filtros do Admin */}
-                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col justify-start">
+                    <div className="flex items-center justify-between mb-4">
                       <h4 className="font-bold text-slate-200 text-sm flex items-center gap-2">
                          <Target className="w-4 h-4 text-emerald-400" />
                          Termos Monitorados ({terms.length})
                       </h4>
-                      <div className="text-xs bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-2 py-1 rounded-md font-bold">
-                         Links Salvos na Fila: {capturedOffers.length} un.
+                      <div className="text-xs bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-3 py-1.5 rounded-lg font-black shadow-sm">
+                         Fila Pronta: {capturedOffers.length} un.
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2 mb-4 max-h-24 overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-wrap gap-2 mb-4 max-h-36 overflow-y-auto custom-scrollbar pr-2">
                        {terms.map((config, i) => (
-                         <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold flex items-center gap-2 group">
-                           {config.term} {config.maxPrice ? `(até R$${config.maxPrice})` : ''} - Lmt {config.limit}
-                           <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400">×</button>
+                         <span key={i} className="w-full sm:w-auto flex-1 px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg flex flex-col group transition-all">
+                           <div className="flex items-center justify-between gap-4">
+                             <strong className="text-sm">{config.term}</strong>
+                             <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400 font-bold bg-white/5 px-2 rounded">×</button>
+                           </div>
+                           <div className="text-[10px] sm:text-xs text-emerald-500/60 font-medium mt-1">
+                             {config.minPrice || config.maxPrice ? `Faixa: R$${config.minPrice || '0'} - R$${config.maxPrice || 'Máx'}` : 'Preços Abertos'} 
+                             &nbsp;• Qtd: {config.limit} 
+                             {config.state && ` • 📍 ${config.city ? config.city + ' - ' : ''}${config.state}`}
+                           </div>
                          </span>
                        ))}
-                       {terms.length === 0 && <span className="text-xs text-slate-500 italic">Lista de filtros vazia. Adicione para varrer.</span>}
+                       {terms.length === 0 && <span className="text-xs text-slate-500 italic block py-4 text-center w-full">Nenhuma regra de varredura configurada.</span>}
                     </div>
 
-                    <form onSubmit={handleAddTerm} className="grid grid-cols-12 gap-2 mt-auto">
-                      <input 
-                        type="text" 
-                        value={newTerm}
-                        onChange={(e) => setNewTerm(e.target.value)}
-                        placeholder="Nome do Produto (Ex: TV Samsung)" 
-                        className="col-span-12 sm:col-span-4 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                        disabled={isRunning}
-                      />
-                      <input 
-                        type="number" 
-                        value={newMin}
-                        onChange={(e) => setNewMin(e.target.value)}
-                        placeholder="R$ Mín" 
-                        className="col-span-3 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                        disabled={isRunning}
-                      />
-                      <input 
-                        type="number" 
-                        value={newMax}
-                        onChange={(e) => setNewMax(e.target.value)}
-                        placeholder="R$ Máx" 
-                        className="col-span-3 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                        disabled={isRunning}
-                      />
-                      <input 
-                        type="number" 
-                        value={newLimit}
-                        onChange={(e) => setNewLimit(Number(e.target.value))}
-                        placeholder="Qtd Alvo" 
-                        title="Limite por busca"
-                        className="col-span-2 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                        disabled={isRunning}
-                      />
+                    {!isFormExpanded ? (
                       <button 
-                        type="submit" 
-                        disabled={isRunning || !newTerm.trim()}
-                        className="col-span-4 sm:col-span-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-[10px] sm:text-xs font-bold transition-colors shadow-lg"
+                        onClick={() => setIsFormExpanded(true)}
+                        className="mt-auto w-full py-3 bg-[#0F111A] hover:bg-black/40 border border-dashed border-indigo-500/30 text-indigo-300 hover:text-indigo-200 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(99,102,241,0.05)]"
                       >
-                       + Inserir
+                        + Configurar Nova Trilha Padrão
                       </button>
-                    </form>
+                    ) : (
+                      <form onSubmit={handleAddTerm} className="mt-auto bg-[#090A0F] border border-white/5 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-xl border-t-indigo-500/30">
+                        <div>
+                          <label className="text-xs text-slate-400 font-bold mb-1.5 block uppercase tracking-wider">O que buscar?</label>
+                          <input 
+                            type="text" 
+                            value={newTerm}
+                            onChange={(e) => setNewTerm(e.target.value)}
+                            placeholder="Ex: Fritadeira Airfryer Mondial" 
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 focus:bg-white/10 transition"
+                            disabled={isRunning}
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs text-slate-400 font-bold mb-1.5 block uppercase tracking-wider">Faixa de Preço Ideal</label>
+                            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg overflow-hidden focus-within:border-indigo-500 focus-within:bg-white/10 transition">
+                               <span className="pl-3 text-slate-500 font-bold text-xs">R$</span>
+                               <input type="number" value={newMin} onChange={(e) => setNewMin(e.target.value)} placeholder="0" className="w-full bg-transparent p-2.5 text-sm text-white focus:outline-none font-medium" disabled={isRunning} />
+                               <span className="text-slate-600 px-2">-</span>
+                               <span className="text-slate-500 font-bold text-xs">R$</span>
+                               <input type="number" value={newMax} onChange={(e) => setNewMax(e.target.value)} placeholder="Máximo" className="w-full bg-transparent p-2.5 text-sm text-white focus:outline-none font-medium" disabled={isRunning} />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-slate-400 font-bold mb-1.5 block uppercase tracking-wider">Quantidade Alvo</label>
+                            <input 
+                              type="number" 
+                              value={newLimit}
+                              onChange={(e) => setNewLimit(Number(e.target.value))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:bg-white/10 transition"
+                              disabled={isRunning}
+                              min={1}
+                              max={50}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div>
+                              <label className="text-xs text-slate-400 font-bold mb-1.5 block uppercase tracking-wider">Região Exata (UF)</label>
+                              <select 
+                                 value={selectedState} 
+                                 onChange={(e) => { setSelectedState(e.target.value); setSelectedCity(""); }} 
+                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 focus:bg-white/10 transition appearance-none cursor-pointer"
+                                 disabled={isRunning}
+                              >
+                                 <option value="" className="bg-slate-900">Todas do Brasil</option>
+                                 {states.map(st => <option key={st.sigla} value={st.sigla} className="bg-slate-900">{st.nome}</option>)}
+                              </select>
+                           </div>
+                           <div>
+                              <label className="text-xs text-slate-400 font-bold mb-1.5 block uppercase tracking-wider">Município</label>
+                              <select 
+                                 value={selectedCity} 
+                                 onChange={(e) => setSelectedCity(e.target.value)} 
+                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 focus:bg-white/10 transition appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                 disabled={isRunning || !selectedState}
+                              >
+                                 <option value="" className="bg-slate-900">Qualquer cidade no Estado</option>
+                                 {cities.map(ct => <option key={ct.nome} value={ct.nome} className="bg-slate-900">{ct.nome}</option>)}
+                              </select>
+                           </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-2">
+                          <button type="button" onClick={() => setIsFormExpanded(false)} className="flex-1 py-3 bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 rounded-xl text-sm font-bold transition-colors">Fechar</button>
+                          <button type="submit" disabled={isRunning || !newTerm.trim()} className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:shadow-none">Confirmar Inteligência</button>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 </div>
 
