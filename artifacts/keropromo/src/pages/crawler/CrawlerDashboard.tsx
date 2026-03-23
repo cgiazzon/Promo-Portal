@@ -12,10 +12,11 @@ export default function CrawlerDashboard() {
     if (isRunning) {
       interval = setInterval(() => {
         const events = [
-          { msg: "Varrendo fonte primária: Amazon Offers", type: "info" },
-          { msg: "Novo bloco de 45 produtos capturado.", type: "success" },
-          { msg: "Taxa de reposta lentidão detectada na fonte B.", type: "warning" },
-          { msg: "Processando 12 itens na fila de extração...", type: "info" }
+          { msg: "Varrendo Mercado Livre API: buscando termo 'promoção smartphone'...", type: "info" },
+          { msg: "Token Securizado do App atualizado com sucesso.", type: "success" },
+          { msg: "Novo bloco de anúncios capturado da vitrine e ordenado pelo menor preço.", type: "success" },
+          { msg: "Aguardando janela de ciclo para evitar limite de acessos (Rate Limit)...", type: "warning" },
+          { msg: "Formatando links de afiliado das ofertas processadas...", type: "info" }
         ] as const;
         const randomEvent = events[Math.floor(Math.random() * events.length)];
         
@@ -115,23 +116,35 @@ export default function CrawlerDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  {["Amazon Marketplace", "Shopee API", "MercadoLivre Scraper"].map((fonte, i) => (
-                    <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-2xl hover:border-indigo-500/50 transition-colors group cursor-pointer flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-[#1A1C25] border border-white/5 flex items-center justify-center">
-                          <Globe className="w-5 h-5 text-indigo-300" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-200">{fonte}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">Frequência: a cada 15 min</p>
-                        </div>
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-5 rounded-2xl hover:border-indigo-500/50 transition-colors group cursor-pointer flex justify-between items-center shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 flex items-center justify-center">
+                        <Globe className="w-5 h-5" />
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-green-400 font-bold">Online</p>
-                        <p className="text-[10px] text-slate-500 mt-1">Ping: {Math.floor(Math.random() * 50) + 12}ms</p>
+                      <div>
+                        <h4 className="font-bold text-slate-200">API Mercado Livre (Oficial)</h4>
+                        <p className="text-xs text-indigo-300 mt-0.5">Varredura Autenticada via App</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="text-xs text-green-400 font-bold">Conectado</p>
+                      <p className="text-[10px] text-slate-500 mt-1">Ping: 34ms</p>
+                    </div>
+                  </div>
+
+                  {/* Controle de Filtros do Admin */}
+                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-colors flex flex-col justify-center">
+                    <h4 className="font-bold text-slate-200 text-sm mb-3 flex items-center gap-2">
+                       <Target className="w-4 h-4 text-emerald-400" />
+                       Termos Monitorados Pelo Robô
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                       <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold">promoção smartphone</span>
+                       <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-dashed border-white/20 rounded-md text-xs transition-colors">
+                         + Adicionar Palavra-chave
+                       </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Activity Feed */}
