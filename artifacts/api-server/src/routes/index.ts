@@ -15,6 +15,7 @@ import adminRouter from "./admin";
 import entrepreneurRouter from "./entrepreneur";
 import shortLinksRouter from "./shortLinks";
 import billingRouter, { publicBillingRouter } from "./billing";
+import crawlerRouter from "./crawler";
 import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -26,6 +27,7 @@ router.use(featuredRouter);
 router.use(marketplacesRouter);
 router.use(shortLinksRouter);
 router.use(publicBillingRouter);
+router.use(crawlerRouter);
 
 router.use(requireAuth);
 router.use(billingRouter);

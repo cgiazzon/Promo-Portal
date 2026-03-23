@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Activity, Database, AlertTriangle, BarChart3, Play, Square, Settings, RefreshCw, Server, Target, Zap, Globe, Cpu } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Terminal, Activity, ListFilter, Play, Square, Settings, Database, RefreshCw, BarChart2, AlertCircle, Search, Clock, Target, Globe, Zap, AlertTriangle, Edit2, Trash2, Hash, DollarSign } from "lucide-react";
 
 export default function CrawlerDashboard() {
   const [isRunning, setIsRunning] = useState(false);
@@ -110,8 +110,8 @@ export default function CrawlerDashboard() {
         
         // Removemos o sort=price_asc para a pesquisa de termos amplos poder apresentar 
         // logo de cara o aparelho "Apple" Real (por relevancia) em vez de fones, capinhas ou peças!
-        // Também não concatenamos o estado na String "Q" para não destruir o Match de palavras do aparelho.
-        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
+        // Usamos nosso Backend oficial (Proxy Router criado agora) para quebrar o Anti-Bot 403 do ML em Navegadores.
+        const url = `/api/crawler/ml-search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
 
         fetch(url)
           .then(res => res.json())
@@ -242,53 +242,62 @@ export default function CrawlerDashboard() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-5 rounded-2xl hover:border-indigo-500/50 transition-colors group cursor-pointer flex justify-between items-center shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 flex items-center justify-center">
-                        <Globe className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-200">API Mercado Livre (Oficial)</h4>
-                        <p className="text-xs text-indigo-300 mt-0.5">Varredura Autenticada via App</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-green-400 font-bold">Conectado</p>
-                      <p className="text-[10px] text-slate-500 mt-1">Ping: 34ms</p>
-                    </div>
+                {/* Micro-Dashboard de Sources Conectadas */}
+                <div className="flex items-center gap-3 mb-6 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl w-fit shadow-md">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Activity className="w-3.5 h-3.5" /> Conexão Matrix:
+                  </span>
+                  <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-md">
+                    <Globe className="w-3 h-3 text-indigo-400" />
+                    <span className="text-[10px] font-black text-indigo-200">API Mercado Livre Oficial</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse ml-1 shadow-[0_0_5px_#4ade80]"></span>
+                    <span className="text-[9px] text-green-400/80 uppercase tracking-wider font-bold">Online (28ms)</span>
                   </div>
+                </div>
 
-                  {/* Controle de Filtros do Admin */}
-                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col justify-start">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-                         <Target className="w-4 h-4 text-emerald-400" />
-                         Termos Monitorados ({terms.length})
-                      </h4>
-                      <div className="text-xs bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-3 py-1.5 rounded-lg font-black shadow-sm">
-                         Fila Pronta: {capturedOffers.length} un.
+                <div className="mb-8">
+                  {/* Controle de Filtros do Admin em Largura Total */}
+                  <div className="bg-gradient-to-b from-white/5 to-transparent border border-white/10 p-6 sm:p-8 rounded-3xl flex flex-col justify-start shadow-2xl">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                      <div>
+                        <h4 className="text-xl font-bold text-slate-200 flex items-center gap-3 mb-1">
+                           <Target className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]" />
+                           Trilhas de Rastreio Ativas
+                        </h4>
+                        <p className="text-xs text-slate-500">({terms.length} algoritmos rodando em loop na nuvem)</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 px-4 py-2 rounded-xl font-bold shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+                         <Database className="w-4 h-4 opacity-70" /> 
+                         Fila Pronta: {capturedOffers.length} links extraídos
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2 mb-4 max-h-36 overflow-y-auto custom-scrollbar pr-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                        {terms.map((config, i) => (
-                         <span key={i} className="w-full sm:w-auto flex-1 px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg flex flex-col group transition-all">
-                           <div className="flex items-center justify-between gap-4">
-                             <strong className="text-sm">{config.term}</strong>
-                             <div className="flex items-center gap-1">
-                               <button onClick={() => handleEditTerm(config)} className="opacity-70 hover:opacity-100 hover:text-emerald-200 font-bold bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-xs transition">Editar</button>
-                               <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400 font-bold bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-xs transition">×</button>
+                         <div key={i} className="relative bg-[#090A0F]/80 backdrop-blur-sm border border-emerald-500/20 hover:border-emerald-500/50 p-4 rounded-2xl flex flex-col group transition-all shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_0_20px_rgba(52,211,153,0.1)]">
+                           <div className="flex items-start justify-between gap-4 mb-3">
+                             <div className="flex-1 overflow-hidden">
+                               <strong className="text-base text-emerald-400 block mb-1 truncate" title={config.term}>{config.term.toUpperCase()}</strong>
+                               {config.state && <span className="inline-block text-[10px] uppercase font-bold tracking-wider bg-white/5 border border-white/5 px-2 py-0.5 rounded text-slate-400 truncate max-w-full">📍 {config.city ? config.city + ' - ' : ''}{config.state}</span>}
+                             </div>
+                             <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button onClick={() => handleEditTerm(config)} className="text-emerald-400 hover:text-emerald-300 bg-white/5 hover:bg-white/10 p-1.5 rounded-lg transition border border-transparent hover:border-white/10" title="Editar"><Edit2 className="w-3.5 h-3.5"/></button>
+                               <button onClick={() => handleRemoveTerm(config.term)} className="text-red-400 hover:text-red-300 bg-white/5 hover:bg-white/10 p-1.5 rounded-lg transition border border-transparent hover:border-white/10" title="Remover Regra"><Trash2 className="w-3.5 h-3.5"/></button>
                              </div>
                            </div>
-                           <div className="text-[10px] sm:text-xs text-emerald-500/60 font-medium mt-1 tracking-wide">
-                             {config.minPrice || config.maxPrice ? `R$ ${config.minPrice || '0'} - ${config.maxPrice || 'Máx'}` : 'Preço Ilimitado'} 
-                             <span className="opacity-50 mx-1">|</span> Qtd: {config.limit} 
-                             {config.state && <><span className="opacity-50 mx-1">|</span>📍 {config.city ? config.city + ' - ' : ''}{config.state}</>}
+                           <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-slate-400 mt-auto">
+                             <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5"><DollarSign className="w-3 h-3 text-emerald-500/70"/> {config.minPrice || config.maxPrice ? `R$${config.minPrice || '0'} a ${config.maxPrice || 'Máx'}` : 'Preço Aberto'}</div>
+                             <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5"><Hash className="w-3 h-3 text-indigo-400/70"/> Volta {config.limit} un.</div>
                            </div>
-                         </span>
+                         </div>
                        ))}
-                       {terms.length === 0 && <span className="text-xs text-slate-500 italic block py-4 text-center w-full">Nenhuma regra de varredura configurada.</span>}
+                       {terms.length === 0 && (
+                         <div className="col-span-full border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                           <AlertCircle className="w-8 h-8 text-slate-500 mb-3 opacity-50" />
+                           <p className="text-sm font-bold text-slate-400">Motor Congelado</p>
+                           <p className="text-xs text-slate-500 mt-1">Nenhuma regra ativa mapeada. Adicione os filtros abaixo.</p>
+                         </div>
+                       )}
                     </div>
 
                     {!isFormExpanded ? (
