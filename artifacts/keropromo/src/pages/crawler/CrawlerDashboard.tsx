@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Terminal, Activity, ListFilter, Play, Square, Settings, Database, RefreshCw, BarChart2, AlertCircle, Search, Clock, Target, Globe, Zap, AlertTriangle, Edit2, Trash2, Hash, DollarSign } from "lucide-react";
+import { Terminal, Activity, ListFilter, Play, Square, Settings, Database, RefreshCw, BarChart2, BarChart3, AlertCircle, Search, Clock, Target, Globe, Zap, AlertTriangle, Edit2, Trash2, Hash, DollarSign, Cpu } from "lucide-react";
 
 export default function CrawlerDashboard() {
   const [isRunning, setIsRunning] = useState(false);
