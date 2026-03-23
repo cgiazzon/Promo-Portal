@@ -2,39 +2,70 @@ import axios from "axios";
 
 export class MercadoLivreAPI {
   private static readonly BASE_URL = "https://api.mercadolibre.com";
+  private static accessToken: string | null = null;
 
-  /**
-   * Busca ofertas e promoções baseadas na API pública do Mercado Livre
-   */
-  static async buscarOfertas(termoDaBusca: string = "ofertas") {
-    console.log(`[ML-API] Buscando ofertas para o termo: ${termoDaBusca}...`);
+  static async autenticar() {
+    const clientId = process.env.ML_APP_ID;
+    const clientSecret = process.env.ML_SECRET_KEY;
+
+    if (!clientId || !clientSecret) {
+      console.warn("[ML-API] ⚠️ AVISO: Chaves não configuradas no .env. A busca não estará logada.");
+      return;
+    }
+
     try {
-      // Exemplo usando a busca de itens (Search API)
-      const response = await axios.get(`${this.BASE_URL}/sites/MLB/search`, {
+      console.log("[ML-API] 🔐 Gerando Token de Acesso seguro do seu App...");
+      const response = await axios.post(`${this.BASE_URL}/oauth/token`, null, {
         params: {
-          q: termoDaBusca,
-          limit: 10,
-          // Outros parâmetros podem ser adicionados conforme a documentação oficial
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret
         }
       });
-
-      const itens = response.data.results;
-      console.log(`[ML-API] Sucesso! Encontramos ${itens.length} ofertas brutas.`);
       
-      return itens.map((item: any) => ({
-        id: item.id,
-        titulo: item.title,
-        preco: item.price,
-        link: item.permalink,
-        imagem: item.thumbnail
-      }));
-
+      this.accessToken = response.data.access_token;
+      console.log("[ML-API] ✅ Token App gerado! Robô validado com chaves do Mercado Livre.");
     } catch (error: any) {
-      console.error("[ML-API] Erro ao buscar dados do Mercado Livre:", error.message);
-      throw error;
+      console.error("[ML-API] ❌ Falha de credenciais:", error?.response?.data || error.message);
     }
   }
 
-  // Futuramente, se precisarmos do Token OAuth do aplicativo que você está criando:
-  // static async gerarTokenApp(clientId: string, clientSecret: string) { ... }
+  static async buscarOfertas(termoDaBusca: string = "ofertas") {
+    console.log(`[ML-API] 🔍 Realizando varredura pelo filtro: "${termoDaBusca}"...`);
+    
+    // Se tivermos o token de aprovação, nós mandamos junto pro ML saber que somos VIP
+    const headers: any = {};
+    if (this.accessToken) {
+      headers["Authorization"] = `Bearer ${this.accessToken}`;
+    }
+
+    try {
+      const response = await axios.get(`${this.BASE_URL}/sites/MLB/search`, {
+        params: {
+          q: termoDaBusca,
+          limit: 10,  // Buscamos 10 links primeiro
+          sort: "price_asc" // Filtrar pelos mais baratos 
+        },
+        headers
+      });
+
+      const itens = response.data.results;
+      console.log(`[ML-API] ✨ Sucesso! O Crawler capturou ${itens.length} anúncios brutos.`);
+      
+      // Filtramos apenas as moedas de Ouro cruzeiras pro nosso extrato
+      return itens.map((item: any) => ({
+        id: item.id,
+        titulo: item.title,
+        preco_atual: item.price,
+        condicao: item.condition,
+        estoque: item.available_quantity,
+        imagem: item.thumbnail,
+        link: item.permalink
+      }));
+
+    } catch (error: any) {
+      console.error("[ML-API] ❌ Erro de varredura:", error?.response?.data || error.message);
+      throw error;
+    }
+  }
 }

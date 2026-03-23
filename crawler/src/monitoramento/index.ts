@@ -1,12 +1,22 @@
 import { MercadoLivreAPI } from "./mercadolivre";
+import dotenv from "dotenv";
 
-// Módulo para monitorar pontas e fontes de informações externas.
+// Carrega as variáveis (como as chaves Pessoais) do arquivo .env
+dotenv.config();
+
 export class MonitoramentoFontes {
   static async iniciar() {
-    console.log("[Monitoramento] Iniciando acompanhamento das fontes...");
+    console.log("==========================================");
+    console.log("[Monitoramento] Robô Crawler Despertado...");
+    console.log("==========================================");
     
-    // Inicia a busca como teste no Mercado Livre
+    // 1. O Robô veste o crachá do "App" do usuário e entra na porta oficial
+    await MercadoLivreAPI.autenticar();
+
+    // 2. O Robô digita o filtro e faz o scrape nativo das páginas da fonte
     const ofertas = await MercadoLivreAPI.buscarOfertas("promoção smartphone");
-    console.log("[Monitoramento] Primeiros 3 itens processados de exemplo:", ofertas.slice(0, 3));
+    
+    // 3. Imprime as top 3 ofertas mais baratas como teste real na tela
+    console.table(ofertas.slice(0, 3));
   }
 }
