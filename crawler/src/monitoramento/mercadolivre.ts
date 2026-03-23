@@ -30,8 +30,13 @@ export class MercadoLivreAPI {
     }
   }
 
-  static async buscarOfertas(termoDaBusca: string = "ofertas") {
-    console.log(`[ML-API] 🔍 Realizando varredura pelo filtro: "${termoDaBusca}"...`);
+  static async buscarOfertas(
+    termoDaBusca: string = "ofertas",
+    limite: number = 20,
+    precoMin?: number,
+    precoMax?: number
+  ) {
+    console.log(`[ML-API] 🔍 Filtro ativo: "${termoDaBusca}" | Quantidade: ${limite} itens | Limite de Preço: R$${precoMin || 0} - R$${precoMax || 'Máx'}`);
     
     // Se tivermos o token de aprovação, nós mandamos junto pro ML saber que somos VIP
     const headers: any = {};
@@ -39,13 +44,22 @@ export class MercadoLivreAPI {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
+    // Configurando parâmetros avançados da Documentação do ML
+    const params: any = {
+      q: termoDaBusca,
+      limit: limite,
+      sort: "price_asc" // Filtrar pelos mais baratos do nicho
+    };
+
+    if (precoMin || precoMax) {
+      const min = precoMin ? precoMin.toString() : "*";
+      const max = precoMax ? precoMax.toString() : "*";
+      params.price = `${min}-${max}`;
+    }
+
     try {
       const response = await axios.get(`${this.BASE_URL}/sites/MLB/search`, {
-        params: {
-          q: termoDaBusca,
-          limit: 10,  // Buscamos 10 links primeiro
-          sort: "price_asc" // Filtrar pelos mais baratos 
-        },
+        params,
         headers
       });
 

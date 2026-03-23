@@ -7,20 +7,36 @@ export default function CrawlerDashboard() {
   const [logs, setLogs] = useState<{time: string, msg: string, type: 'info'|'warning'|'error'|'success'}[]>([]);
 
   // Novos estados funcionais
-  const [terms, setTerms] = useState<string[]>(["promoção smartphone", "tv smart 50", "notebook gamer"]);
+  type SearchFilter = { term: string, limit: number, minPrice?: string, maxPrice?: string };
+  const [terms, setTerms] = useState<SearchFilter[]>([
+    { term: "iphone 13 pro", limit: 15, minPrice: "2000", maxPrice: "4000" },
+    { term: "fritadeira airfryer", limit: 30, maxPrice: "350" }
+  ]);
   const [newTerm, setNewTerm] = useState("");
-  const [totalOffers, setTotalOffers] = useState(0);
+  const [newLimit, setNewLimit] = useState(20);
+  const [newMin, setNewMin] = useState("");
+  const [newMax, setNewMax] = useState("");
+  
+  // Fila Pronta pro Modulo de Disparo/Grupos
+  const [capturedOffers, setCapturedOffers] = useState<{id: string, term: string, price: string, link: string}[]>([]);
 
   const handleAddTerm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTerm.trim() && !terms.includes(newTerm.trim())) {
-      setTerms([...terms, newTerm.trim()]);
+    if (newTerm.trim() && !terms.find(t => t.term === newTerm.trim())) {
+      setTerms([...terms, { 
+        term: newTerm.trim(), 
+        limit: newLimit, 
+        minPrice: newMin || undefined, 
+        maxPrice: newMax || undefined 
+      }]);
       setNewTerm("");
+      setNewMin("");
+      setNewMax("");
     }
   };
 
   const handleRemoveTerm = (termToRemove: string) => {
-    setTerms(terms.filter(t => t !== termToRemove));
+    setTerms(terms.filter(t => t.term !== termToRemove));
   };
 
   // Simulation of crawler background activity processing the array of terms
@@ -36,15 +52,22 @@ export default function CrawlerDashboard() {
           return;
         }
 
-        const term = terms[currentTermIndex];
-        const newOffersCount = Math.floor(Math.random() * 45) + 5; // Simula acha de 5 a 50 itens
+        const config = terms[currentTermIndex];
+        const newOffersCount = Math.floor(Math.random() * (config.limit / 2)) + 2; // Simula uma pesagem baseada no limite imposto 
         
-        // Atualiza o contador cumulativo principal
-        setTotalOffers(prev => prev + newOffersCount);
+        // Simula os links criados caindo para a fila do frontend!
+        const generatedOffers = Array.from({length: newOffersCount}).map((_, i) => ({
+          id: Math.random().toString(36).substring(7),
+          term: config.term,
+          price: `R$ ${(Math.random() * (Number(config.maxPrice) || 1000) + (Number(config.minPrice) || 10)).toFixed(2)}`,
+          link: `meulink.app/${config.term.split(" ")[0]}-${Math.floor(Math.random() * 999)}`
+        }));
+        
+        setCapturedOffers(prev => [...generatedOffers, ...prev]);
         
         setLogs(prev => [
-          { time: new Date().toLocaleTimeString(), msg: `[ML API] Concluído: "${term}". Salvos +${newOffersCount} itens viáveis.`, type: "success" },
-          { time: new Date().toLocaleTimeString(), msg: `[ML API] Conectando... Extraindo página 1 do alvo: "${term}"`, type: "info" },
+          { time: new Date().toLocaleTimeString(), msg: `[ML API] Extração para "${config.term}": Salvos +${newOffersCount} links (Restrito até R$${config.maxPrice || 'Sem Teto'}).`, type: "success" },
+          { time: new Date().toLocaleTimeString(), msg: `[ML API] Iniciando conexão avançada com a Fonte...`, type: "info" },
           ...prev
         ].slice(0, 50));
 
@@ -168,35 +191,60 @@ export default function CrawlerDashboard() {
                          Termos Monitorados ({terms.length})
                       </h4>
                       <div className="text-xs bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-2 py-1 rounded-md font-bold">
-                         Total Capturado: {totalOffers} un.
+                         Links Salvos na Fila: {capturedOffers.length} un.
                       </div>
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mb-4 max-h-24 overflow-y-auto custom-scrollbar">
-                       {terms.map((term, i) => (
-                         <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold flex items-center gap-1 group">
-                           {term}
-                           <button onClick={() => handleRemoveTerm(term)} className="opacity-50 hover:opacity-100 hover:text-red-400 ml-1">×</button>
+                       {terms.map((config, i) => (
+                         <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold flex items-center gap-2 group">
+                           {config.term} {config.maxPrice ? `(até R$${config.maxPrice})` : ''} - Lmt {config.limit}
+                           <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400">×</button>
                          </span>
                        ))}
                        {terms.length === 0 && <span className="text-xs text-slate-500 italic">Lista de filtros vazia. Adicione para varrer.</span>}
                     </div>
 
-                    <form onSubmit={handleAddTerm} className="flex gap-2 mt-auto">
+                    <form onSubmit={handleAddTerm} className="grid grid-cols-12 gap-2 mt-auto">
                       <input 
                         type="text" 
                         value={newTerm}
                         onChange={(e) => setNewTerm(e.target.value)}
-                        placeholder="Ex: iphone 13 pro" 
-                        className="flex-1 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        placeholder="Nome do Produto (Ex: TV Samsung)" 
+                        className="col-span-12 sm:col-span-4 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        disabled={isRunning}
+                      />
+                      <input 
+                        type="number" 
+                        value={newMin}
+                        onChange={(e) => setNewMin(e.target.value)}
+                        placeholder="R$ Mín" 
+                        className="col-span-3 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        disabled={isRunning}
+                      />
+                      <input 
+                        type="number" 
+                        value={newMax}
+                        onChange={(e) => setNewMax(e.target.value)}
+                        placeholder="R$ Máx" 
+                        className="col-span-3 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        disabled={isRunning}
+                      />
+                      <input 
+                        type="number" 
+                        value={newLimit}
+                        onChange={(e) => setNewLimit(Number(e.target.value))}
+                        placeholder="Qtd Alvo" 
+                        title="Limite por busca"
+                        className="col-span-2 sm:col-span-2 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                         disabled={isRunning}
                       />
                       <button 
                         type="submit" 
                         disabled={isRunning || !newTerm.trim()}
-                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-xs font-bold transition-colors"
+                        className="col-span-4 sm:col-span-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-[10px] sm:text-xs font-bold transition-colors shadow-lg"
                       >
-                        Salvar Filtro
+                       + Inserir
                       </button>
                     </form>
                   </div>
@@ -230,19 +278,57 @@ export default function CrawlerDashboard() {
               </div>
             )}
 
-            {/* TAB: EXTRATO */}
+            {/* TAB: EXTRATO / EXPORTAÇÃO DE LINKS PARA O DISTRIBUIDOR DOS GRUPOS */}
             {activeTab === "extrato" && (
-              <div className="relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center py-20">
-                 <div className="w-24 h-24 bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 rounded-3xl mx-auto flex items-center justify-center mb-6">
-                   <Database className="w-10 h-10 text-cyan-400" />
+              <div className="relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
+                 <div className="flex items-center justify-between mb-8">
+                   <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 flex items-center gap-3">
+                     <Database className="w-6 h-6 text-cyan-400" /> Gatilho de Ofertas Validadas
+                   </h2>
+                   <div className="flex gap-3">
+                     <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-sm flex items-center gap-2 transition shadow-[0_4px_15px_rgba(79,70,229,0.3)]">
+                       <Zap className="w-4 h-4" /> Distribuir p/ Grupos WhatsApp ({capturedOffers.length})
+                     </button>
+                   </div>
                  </div>
-                 <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400">Extrato de Dados Brutos</h2>
-                 <p className="text-slate-400 max-w-md mx-auto mt-4 leading-relaxed">
-                   Os itens capturados pelas fontes aparecerão aqui formatados em tabelas de extração, prontos para tratamento e categorização.
-                 </p>
-                 <button className="mt-8 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition text-sm flex items-center gap-2 mx-auto">
-                   <RefreshCw className="w-4 h-4" /> Atualizar Tabela de Extrato
-                 </button>
+                 
+                 <div className="flex-1 bg-[#090A0F] border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 bg-white/5 border-b border-white/10 grid grid-cols-12 gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                       <div className="col-span-5">Pilar do Anúncio</div>
+                       <div className="col-span-2">Preço Retido</div>
+                       <div className="col-span-3">Link Trateado</div>
+                       <div className="col-span-2 text-right">Ação</div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                      {capturedOffers.length === 0 ? (
+                        <div className="h-48 flex flex-col items-center justify-center text-slate-500">
+                          <AlertTriangle className="w-8 h-8 mb-3 opacity-20" />
+                          <p>Nenhuma oferta capturada ainda. Inicie o Motor.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {capturedOffers.map(oferta => (
+                            <div key={oferta.id} className="px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl grid grid-cols-12 gap-4 items-center border border-transparent hover:border-white/10 transition-colors">
+                              <div className="col-span-5 flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center shrink-0">🛒</div>
+                                <div>
+                                  <div className="text-sm font-bold text-slate-200 truncate">{oferta.term.toUpperCase()}</div>
+                                  <div className="text-[10px] text-slate-500 font-mono">ID: {oferta.id}</div>
+                                </div>
+                              </div>
+                              <div className="col-span-2 text-green-400 font-black text-sm">{oferta.price}</div>
+                              <div className="col-span-3 text-cyan-400/80 hover:text-cyan-300 text-xs truncate underline cursor-pointer">
+                                {oferta.link}
+                              </div>
+                              <div className="col-span-2 text-right">
+                                <button className="px-2 py-1 bg-white/5 hover:bg-white/20 text-slate-300 rounded text-xs font-bold border border-white/10">Remover</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                 </div>
               </div>
             )}
 
