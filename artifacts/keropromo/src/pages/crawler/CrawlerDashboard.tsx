@@ -6,25 +6,53 @@ export default function CrawlerDashboard() {
   const [activeTab, setActiveTab] = useState("monitoramento");
   const [logs, setLogs] = useState<{time: string, msg: string, type: 'info'|'warning'|'error'|'success'}[]>([]);
 
-  // Simulation of crawler background activity
+  // Novos estados funcionais
+  const [terms, setTerms] = useState<string[]>(["promoção smartphone", "tv smart 50", "notebook gamer"]);
+  const [newTerm, setNewTerm] = useState("");
+  const [totalOffers, setTotalOffers] = useState(0);
+
+  const handleAddTerm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTerm.trim() && !terms.includes(newTerm.trim())) {
+      setTerms([...terms, newTerm.trim()]);
+      setNewTerm("");
+    }
+  };
+
+  const handleRemoveTerm = (termToRemove: string) => {
+    setTerms(terms.filter(t => t !== termToRemove));
+  };
+
+  // Simulation of crawler background activity processing the array of terms
   useEffect(() => {
     let interval: any;
     if (isRunning) {
+      let currentTermIndex = 0;
+
       interval = setInterval(() => {
-        const events = [
-          { msg: "Varrendo Mercado Livre API: buscando termo 'promoção smartphone'...", type: "info" },
-          { msg: "Token Securizado do App atualizado com sucesso.", type: "success" },
-          { msg: "Novo bloco de anúncios capturado da vitrine e ordenado pelo menor preço.", type: "success" },
-          { msg: "Aguardando janela de ciclo para evitar limite de acessos (Rate Limit)...", type: "warning" },
-          { msg: "Formatando links de afiliado das ofertas processadas...", type: "info" }
-        ] as const;
-        const randomEvent = events[Math.floor(Math.random() * events.length)];
+        if (terms.length === 0) {
+          setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg: "ERRO: Nenhum termo configurado para busca no Mercado Livre.", type: "error" }, ...prev].slice(0, 50));
+          setIsRunning(false);
+          return;
+        }
+
+        const term = terms[currentTermIndex];
+        const newOffersCount = Math.floor(Math.random() * 45) + 5; // Simula acha de 5 a 50 itens
         
-        setLogs(prev => [{ time: new Date().toLocaleTimeString(), ...randomEvent }, ...prev].slice(0, 50));
-      }, 2500);
+        // Atualiza o contador cumulativo principal
+        setTotalOffers(prev => prev + newOffersCount);
+        
+        setLogs(prev => [
+          { time: new Date().toLocaleTimeString(), msg: `[ML API] Concluído: "${term}". Salvos +${newOffersCount} itens viáveis.`, type: "success" },
+          { time: new Date().toLocaleTimeString(), msg: `[ML API] Conectando... Extraindo página 1 do alvo: "${term}"`, type: "info" },
+          ...prev
+        ].slice(0, 50));
+
+        currentTermIndex = (currentTermIndex + 1) % terms.length;
+      }, 3500); // Gira a cada 3.5 segundos por termo
     }
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isRunning, terms]);
 
   return (
     <div className="min-h-screen bg-[#0B0C10] text-slate-200 font-sans p-4 sm:p-8 tracking-wide">
@@ -133,17 +161,44 @@ export default function CrawlerDashboard() {
                   </div>
 
                   {/* Controle de Filtros do Admin */}
-                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-colors flex flex-col justify-center">
-                    <h4 className="font-bold text-slate-200 text-sm mb-3 flex items-center gap-2">
-                       <Target className="w-4 h-4 text-emerald-400" />
-                       Termos Monitorados Pelo Robô
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                       <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold">promoção smartphone</span>
-                       <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-dashed border-white/20 rounded-md text-xs transition-colors">
-                         + Adicionar Palavra-chave
-                       </button>
+                  <div className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-slate-200 text-sm flex items-center gap-2">
+                         <Target className="w-4 h-4 text-emerald-400" />
+                         Termos Monitorados ({terms.length})
+                      </h4>
+                      <div className="text-xs bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-2 py-1 rounded-md font-bold">
+                         Total Capturado: {totalOffers} un.
+                      </div>
                     </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4 max-h-24 overflow-y-auto custom-scrollbar">
+                       {terms.map((term, i) => (
+                         <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-bold flex items-center gap-1 group">
+                           {term}
+                           <button onClick={() => handleRemoveTerm(term)} className="opacity-50 hover:opacity-100 hover:text-red-400 ml-1">×</button>
+                         </span>
+                       ))}
+                       {terms.length === 0 && <span className="text-xs text-slate-500 italic">Lista de filtros vazia. Adicione para varrer.</span>}
+                    </div>
+
+                    <form onSubmit={handleAddTerm} className="flex gap-2 mt-auto">
+                      <input 
+                        type="text" 
+                        value={newTerm}
+                        onChange={(e) => setNewTerm(e.target.value)}
+                        placeholder="Ex: iphone 13 pro" 
+                        className="flex-1 bg-black/20 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        disabled={isRunning}
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={isRunning || !newTerm.trim()}
+                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-xs font-bold transition-colors"
+                      >
+                        Salvar Filtro
+                      </button>
+                    </form>
                   </div>
                 </div>
 
