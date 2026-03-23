@@ -26,6 +26,7 @@ import AdminCommissions from "@/pages/admin/Commissions";
 import AdminWithdrawals from "@/pages/admin/Withdrawals";
 import AdminSubscriptions from "@/pages/admin/Subscriptions";
 import AdminMarketplaces from "@/pages/admin/Marketplaces";
+import CrawlerDashboard from "@/pages/crawler/CrawlerDashboard";
 import CollaboratorDashboard from "@/pages/collaborator/Dashboard";
 import CollaboratorGroups from "@/pages/collaborator/Groups";
 import CollaboratorSendHistory from "@/pages/collaborator/SendHistory";
@@ -58,6 +59,8 @@ function Router() {
       <Route path="/dashboard/comissoes" component={Commissions} />
       <Route path="/dashboard/colaboradores" component={EntrepreneurCollaborators} />
       <Route path="/dashboard/configuracoes" component={EntrepreneurSettings} />
+
+      <Route path="/crawler" component={CrawlerDashboard} />
 
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/ofertas" component={AdminOffers} />
