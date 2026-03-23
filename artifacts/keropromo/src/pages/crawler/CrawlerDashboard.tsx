@@ -18,7 +18,7 @@ export default function CrawlerDashboard() {
   const [newMax, setNewMax] = useState("");
   
   // Fila Pronta pro Modulo de Disparo/Grupos
-  const [capturedOffers, setCapturedOffers] = useState<{id: string, term: string, price: string, link: string}[]>([]);
+  const [capturedOffers, setCapturedOffers] = useState<{id: string, term: string, price: string, link: string, thumbnail?: string}[]>([]);
 
   const handleAddTerm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,26 +53,54 @@ export default function CrawlerDashboard() {
         }
 
         const config = terms[currentTermIndex];
-        const newOffersCount = Math.floor(Math.random() * (config.limit / 2)) + 2; // Simula uma pesagem baseada no limite imposto 
-        
-        // Simula os links criados caindo para a fila do frontend!
-        const generatedOffers = Array.from({length: newOffersCount}).map((_, i) => ({
-          id: Math.random().toString(36).substring(7),
-          term: config.term,
-          price: `R$ ${(Math.random() * (Number(config.maxPrice) || 1000) + (Number(config.minPrice) || 10)).toFixed(2)}`,
-          link: `meulink.app/${config.term.split(" ")[0]}-${Math.floor(Math.random() * 999)}`
-        }));
-        
-        setCapturedOffers(prev => [...generatedOffers, ...prev]);
         
         setLogs(prev => [
-          { time: new Date().toLocaleTimeString(), msg: `[ML API] Extração para "${config.term}": Salvos +${newOffersCount} links (Restrito até R$${config.maxPrice || 'Sem Teto'}).`, type: "success" },
-          { time: new Date().toLocaleTimeString(), msg: `[ML API] Iniciando conexão avançada com a Fonte...`, type: "info" },
+          { time: new Date().toLocaleTimeString(), msg: `[ML API] Buscando ofertas reias de: "${config.term}"...`, type: "info" },
           ...prev
         ].slice(0, 50));
 
+        // Construindo a URL com os filtros dinâmicos reais da API
+        const minP = config.minPrice ? config.minPrice : "*";
+        const maxP = config.maxPrice ? config.maxPrice : "*";
+        const priceFilter = (config.minPrice || config.maxPrice) ? `&price=${minP}-${maxP}` : "";
+        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}&sort=price_asc${priceFilter}`;
+
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            const results = data.results || [];
+            
+            if (results.length > 0) {
+              const realOffers = results.map((item: any) => ({
+                id: item.id,
+                term: config.term,
+                price: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price),
+                link: item.permalink,
+                thumbnail: item.thumbnail
+              }));
+              
+              setCapturedOffers(prev => {
+                const uniqueNew = realOffers.filter((o: any) => !prev.find(p => p.id === o.id));
+                return [...uniqueNew, ...prev].slice(0, 200); // Mantém os últimos 200 pro navegador não estourar
+              });
+              
+              setLogs(prev => [
+                { time: new Date().toLocaleTimeString(), msg: `[ML API] Sucesso! Capturadas ${results.length} novas ofertas reais (Lim. R$${config.maxPrice || '∞'}).`, type: "success" },
+                ...prev
+              ].slice(0, 50));
+            } else {
+              setLogs(prev => [
+                { time: new Date().toLocaleTimeString(), msg: `[ML API] Nenhum anúncio atendeu os critérios rígidos para "${config.term}".`, type: "warning" },
+                ...prev
+              ].slice(0, 50));
+            }
+          })
+          .catch(err => {
+            setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg: `[ERRO ML] Falha na matriz externa: ${err.message}`, type: "error" }, ...prev].slice(0, 50));
+          });
+
         currentTermIndex = (currentTermIndex + 1) % terms.length;
-      }, 3500); // Gira a cada 3.5 segundos por termo
+      }, 5000); // Gira a cada 5 segundos buscando ao vivo sem travar o browser
     }
     return () => clearInterval(interval);
   }, [isRunning, terms]);
@@ -310,18 +338,20 @@ export default function CrawlerDashboard() {
                           {capturedOffers.map(oferta => (
                             <div key={oferta.id} className="px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl grid grid-cols-12 gap-4 items-center border border-transparent hover:border-white/10 transition-colors">
                               <div className="col-span-5 flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center shrink-0">🛒</div>
-                                <div>
-                                  <div className="text-sm font-bold text-slate-200 truncate">{oferta.term.toUpperCase()}</div>
-                                  <div className="text-[10px] text-slate-500 font-mono">ID: {oferta.id}</div>
+                                <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                  {oferta.thumbnail ? <img src={oferta.thumbnail} alt="thumb" className="w-full h-full object-cover" /> : '🛒'}
+                                </div>
+                                <div className="overflow-hidden">
+                                  <div className="text-sm font-bold text-slate-200 truncate pr-2" title={oferta.term}>{oferta.term.toUpperCase()}</div>
+                                  <div className="text-[10px] text-slate-500 font-mono">MLB{oferta.id.replace('MLB', '')}</div>
                                 </div>
                               </div>
                               <div className="col-span-2 text-green-400 font-black text-sm">{oferta.price}</div>
                               <div className="col-span-3 text-cyan-400/80 hover:text-cyan-300 text-xs truncate underline cursor-pointer">
-                                {oferta.link}
+                                <a href={oferta.link} target="_blank" rel="noreferrer" title={oferta.link}>{oferta.link}</a>
                               </div>
                               <div className="col-span-2 text-right">
-                                <button className="px-2 py-1 bg-white/5 hover:bg-white/20 text-slate-300 rounded text-xs font-bold border border-white/10">Remover</button>
+                                <button className="px-2 py-1 bg-white/5 hover:bg-white/20 text-slate-300 rounded text-xs font-bold border border-white/10">Ocultar</button>
                               </div>
                             </div>
                           ))}
