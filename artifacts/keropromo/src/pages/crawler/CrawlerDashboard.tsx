@@ -104,14 +104,19 @@ export default function CrawlerDashboard() {
         ].slice(0, 50));
 
         // Construindo a URL com os filtros dinâmicos reais da API
-        const minP = config.minPrice ? config.minPrice : "*";
-        const maxP = config.maxPrice ? config.maxPrice : "*";
-        const priceFilter = (config.minPrice || config.maxPrice) ? `&price=${minP}-${maxP}` : "";
+        // O formato correto aceito nativamente pela API deles para preço é MIN-MAX ou MIN- ou -MAX.
+        let priceFilter = "";
+        if (config.minPrice || config.maxPrice) {
+          const minP = config.minPrice || "0";
+          const maxP = config.maxPrice || ""; // vazio significa sem teto
+          priceFilter = `&price=${minP}-${maxP}`;
+        }
         
         // Removemos o sort=price_asc para a pesquisa de termos amplos poder apresentar 
-        // logo de cara o aparelho "Apple" Real (por relevancia) em vez de fones, capinhas ou peças!
-        // Usamos nosso Backend oficial (Proxy Router criado agora) para quebrar o Anti-Bot 403 do ML em Navegadores.
-        const url = `/api/crawler/ml-search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
+        // logo de cara o aparelho Real (por relevancia).
+        // A API volta para o Frontend, porque os servidores NodeJS na nuvem (api-server) 
+        // sofrem bloqueio (403 Forbidden Firewall) do Mercado Livre. O seu próprio navegador faz a ponte e passa liso!
+        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
 
         fetch(url)
           .then(res => res.json())
@@ -238,7 +243,7 @@ export default function CrawlerDashboard() {
                     <Target className="text-indigo-400" /> Fontes Analisadas
                   </h2>
                   <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-xs font-bold flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> 3 Fontes Ativas
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> 1 Fonte Ativa
                   </span>
                 </div>
 
