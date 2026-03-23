@@ -71,6 +71,18 @@ export default function CrawlerDashboard() {
     setTerms(terms.filter(t => t.term !== termToRemove));
   };
 
+  const handleEditTerm = (config: SearchFilter) => {
+    setNewTerm(config.term);
+    setNewLimit(config.limit);
+    setNewMin(config.minPrice || "");
+    setNewMax(config.maxPrice || "");
+    setSelectedState(config.state || "");
+    setSelectedCity(config.city || "");
+    setIsFormExpanded(true);
+    // Remove temporariamente o termo para dar lugar ao novo modificado em tela
+    setTerms(terms.filter(t => t.term !== config.term));
+  };
+
   // Simulation of crawler background activity processing the array of terms
   useEffect(() => {
     let interval: any;
@@ -95,9 +107,11 @@ export default function CrawlerDashboard() {
         const minP = config.minPrice ? config.minPrice : "*";
         const maxP = config.maxPrice ? config.maxPrice : "*";
         const priceFilter = (config.minPrice || config.maxPrice) ? `&price=${minP}-${maxP}` : "";
-        // Emulando a injeção do State code no search string pro ML (se filtrado)
-        const locationQuery = config.state ? ` ${config.city ? config.city + ' ' : ''}${config.state}` : '';
-        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term + locationQuery)}&limit=${config.limit || 15}&sort=price_asc${priceFilter}`;
+        
+        // Removemos o sort=price_asc para a pesquisa de termos amplos poder apresentar 
+        // logo de cara o aparelho "Apple" Real (por relevancia) em vez de fones, capinhas ou peças!
+        // Também não concatenamos o estado na String "Q" para não destruir o Match de palavras do aparelho.
+        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
 
         fetch(url)
           .then(res => res.json())
@@ -262,12 +276,15 @@ export default function CrawlerDashboard() {
                          <span key={i} className="w-full sm:w-auto flex-1 px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg flex flex-col group transition-all">
                            <div className="flex items-center justify-between gap-4">
                              <strong className="text-sm">{config.term}</strong>
-                             <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400 font-bold bg-white/5 px-2 rounded">×</button>
+                             <div className="flex items-center gap-1">
+                               <button onClick={() => handleEditTerm(config)} className="opacity-70 hover:opacity-100 hover:text-emerald-200 font-bold bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-xs transition">Editar</button>
+                               <button onClick={() => handleRemoveTerm(config.term)} className="opacity-50 hover:opacity-100 hover:text-red-400 font-bold bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-xs transition">×</button>
+                             </div>
                            </div>
-                           <div className="text-[10px] sm:text-xs text-emerald-500/60 font-medium mt-1">
-                             {config.minPrice || config.maxPrice ? `Faixa: R$${config.minPrice || '0'} - R$${config.maxPrice || 'Máx'}` : 'Preços Abertos'} 
-                             &nbsp;• Qtd: {config.limit} 
-                             {config.state && ` • 📍 ${config.city ? config.city + ' - ' : ''}${config.state}`}
+                           <div className="text-[10px] sm:text-xs text-emerald-500/60 font-medium mt-1 tracking-wide">
+                             {config.minPrice || config.maxPrice ? `R$ ${config.minPrice || '0'} - ${config.maxPrice || 'Máx'}` : 'Preço Ilimitado'} 
+                             <span className="opacity-50 mx-1">|</span> Qtd: {config.limit} 
+                             {config.state && <><span className="opacity-50 mx-1">|</span>📍 {config.city ? config.city + ' - ' : ''}{config.state}</>}
                            </div>
                          </span>
                        ))}
