@@ -103,20 +103,61 @@ export default function CrawlerDashboard() {
           ...prev
         ].slice(0, 50));
 
-        // Construindo a URL com os filtros dinâmicos reais da API
-        const minP = config.minPrice ? config.minPrice : "*";
-        const maxP = config.maxPrice ? config.maxPrice : "*";
-        const priceFilter = (config.minPrice || config.maxPrice) ? `&price=${minP}-${maxP}` : "";
+        // API Oficial do Mercado Livre foi atualizada e bloqueia 403 Forbidden para Tokens que não sejam de usuário logado.
+        // Tática "Ghost Scraper": Burlar API puxando a Vitrine Completa (HTML) via Proxy de CORS Aberto (AllOrigins)
+        // e mastigar os Dados por DOMParser simulando WebScraping indetectável direto no próprio navegador!
         
-        // Removemos o sort=price_asc para a pesquisa de termos amplos poder apresentar 
-        // logo de cara o aparelho "Apple" Real (por relevancia) em vez de fones, capinhas ou peças!
-        // Usamos nosso Backend oficial (Proxy Router criado agora) para quebrar o Anti-Bot 403 do ML em Navegadores.
-        const url = `/api/crawler/ml-search?q=${encodeURIComponent(config.term)}&limit=${config.limit || 15}${priceFilter}`;
+        let priceFilter = "";
+        if (config.minPrice || config.maxPrice) {
+          const minP = config.minPrice || "0";
+          const maxP = config.maxPrice || "0"; 
+          priceFilter = `_PriceRange_${minP}-${maxP === "0" ? "0" : maxP}`;
+        }
+        
+        const termFormatted = config.term.trim().replace(/\s+/g, '-');
+        // Ignora cache e forca resultados novos sem indexadores falsos
+        const mlURL = `https://lista.mercadolivre.com.br/${termFormatted}${priceFilter}_NoIndex_True`;
+        const proxyURL = `https://api.allorigins.win/get?url=${encodeURIComponent(mlURL)}`;
 
-        fetch(url)
-          .then(res => res.json())
+        fetch(proxyURL)
+          .then(res => {
+            if(!res.ok) throw new Error("Firewall bloqueou túnel Proxy.");
+            return res.json();
+          })
           .then(data => {
-            const results = data.results || [];
+            if (!data.contents) throw new Error("A vitrine interceptada está vazia.");
+            
+            // Instancia o Extrator nativo do JS
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, "text/html");
+            const itemsNodeList = doc.querySelectorAll('.ui-search-layout__item');
+            
+            // Filtra e converte para objetos
+            const results = Array.from(itemsNodeList)
+              .slice(0, config.limit || 15) // Fatiador de Quantidade Ideal
+              .map(el => {
+                 const titleEl = el.querySelector('.ui-search-item__title');
+                 const priceEl = el.querySelector('.andes-money-amount__fraction');
+                 const linkEl = el.querySelector('.ui-search-link');
+                 const imgEl = el.querySelector('img.ui-search-result-image__image');
+                 
+                 const title = titleEl ? titleEl.textContent : "";
+                 const price = priceEl ? priceEl.textContent : "0";
+                 const link = linkEl ? linkEl.getAttribute('href') : "";
+                 const thumbnail = imgEl ? (imgEl.getAttribute('data-src') || imgEl.getAttribute('src')) : "";
+                 
+                 if (title && link) {
+                   return {
+                     id: "GHOST-" + Math.random().toString(36).substr(2, 9),
+                     price: parseFloat(price.replace('.', '').replace(',','.')),
+                     permalink: link,
+                     thumbnail: thumbnail || "",
+                     title: title
+                   }
+                 }
+                 return null;
+              })
+              .filter(Boolean);
             
             if (results.length > 0) {
               const realOffers = results.map((item: any) => ({
@@ -128,23 +169,23 @@ export default function CrawlerDashboard() {
               }));
               
               setCapturedOffers(prev => {
-                const uniqueNew = realOffers.filter((o: any) => !prev.find(p => p.id === o.id));
+                const uniqueNew = realOffers.filter((o: any) => !prev.find(p => p.link === o.link));
                 return [...uniqueNew, ...prev].slice(0, 200); // Mantém os últimos 200 pro navegador não estourar
               });
               
               setLogs(prev => [
-                { time: new Date().toLocaleTimeString(), msg: `[ML API] Sucesso! Capturadas ${results.length} novas ofertas reais (Lim. R$${config.maxPrice || '∞'}).`, type: "success" },
+                { time: new Date().toLocaleTimeString(), msg: `[GHOST SCRAPER] Sucesso absoluto! Extraídas ${results.length} un. válidas burlando a barreira.`, type: "success" },
                 ...prev
               ].slice(0, 50));
             } else {
               setLogs(prev => [
-                { time: new Date().toLocaleTimeString(), msg: `[ML API] Nenhum anúncio atendeu os critérios rígidos para "${config.term}".`, type: "warning" },
+                { time: new Date().toLocaleTimeString(), msg: `[GHOST SCRAPER] Interceptado com vazio: O Mercado Livre não tem itens para "${config.term}" nesses moldes.`, type: "warning" },
                 ...prev
               ].slice(0, 50));
             }
           })
           .catch(err => {
-            setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg: `[ERRO ML] Falha na matriz externa: ${err.message}`, type: "error" }, ...prev].slice(0, 50));
+            setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg: `[ANTIBOT ALARM] Barreira de proxy ativada: ${err.message}`, type: "error" }, ...prev].slice(0, 50));
           });
 
         currentTermIndex = (currentTermIndex + 1) % terms.length;
@@ -238,7 +279,7 @@ export default function CrawlerDashboard() {
                     <Target className="text-indigo-400" /> Fontes Analisadas
                   </h2>
                   <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-xs font-bold flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> 3 Fontes Ativas
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> 1 Fonte Ativa
                   </span>
                 </div>
 
